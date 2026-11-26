@@ -1,0 +1,217 @@
+<script setup lang="ts">
+import { ArrowLeft, Eye, EyeOff } from 'lucide-vue-next'
+
+definePageMeta({ layout: false })
+
+const { setSession, fetchMe } = useSession()
+const { data: catalogo } = await useFetch<{
+  paises: Array<{ pais: string; grados: string[] }>
+  avatares: string[]
+}>('/api/catalogo')
+
+const paises = computed(() => catalogo.value?.paises || [])
+const avatares = computed(() => catalogo.value?.avatares || ['🦊', '🦁', '🦉', '🐼'])
+
+const form = reactive({
+  nombrePadre: '',
+  correo: '',
+  password: '',
+  confirmPassword: '',
+  pais: 'Venezuela',
+  pinParental: '1234',
+  nombreAlumno: '',
+  gradoAlumno: '1er Año (Secundaria)',
+  avatarAlumno: '🦊'
+})
+
+const gradosPais = computed(() => {
+  const found = paises.value.find((p) => p.pais === form.pais)
+  return found?.grados || ['5to Grado (Primaria)', '1er Año (Secundaria)']
+})
+
+watch(
+  () => form.pais,
+  () => {
+    if (!gradosPais.value.includes(form.gradoAlumno)) {
+      form.gradoAlumno = gradosPais.value[Math.min(3, gradosPais.value.length - 1)] || gradosPais.value[0]
+    }
+  }
+)
+
+const showPassword = ref(false)
+const loading = ref(false)
+const errorMsg = ref('')
+
+const registrar = async () => {
+  errorMsg.value = ''
+  if (form.password !== form.confirmPassword) {
+    errorMsg.value = 'Las contraseñas no coinciden.'
+    return
+  }
+  loading.value = true
+  try {
+    const res = await $fetch<{ padre: any; alumnoActivo: any }>('/api/auth/register', {
+      method: 'POST',
+      body: {
+        nombrePadre: form.nombrePadre,
+        correo: form.correo.trim(),
+        password: form.password,
+        pais: form.pais,
+        pinParental: form.pinParental,
+        nombreAlumno: form.nombreAlumno,
+        gradoAlumno: form.gradoAlumno,
+        avatarAlumno: form.avatarAlumno
+      }
+    })
+    setSession(res.padre, res.alumnoActivo)
+    await fetchMe(true)
+    await navigateTo('/alumno')
+  } catch (err: any) {
+    errorMsg.value = err?.data?.statusMessage || 'No se pudo completar el registro.'
+  } finally {
+    loading.value = false
+  }
+}
+</script>
+
+<template>
+  <div class="min-h-screen bg-gradient-to-b from-blue-50/70 via-[#F7FAFC] to-emerald-50/40 flex items-center justify-center p-4 py-8">
+    <div class="w-full max-w-lg space-y-4">
+      <NuxtLink to="/login" class="inline-flex items-center gap-1.5 text-sm font-bold text-[#2563EB] hover:underline">
+        <ArrowLeft class="w-4 h-4" /> Volver al inicio de sesión
+      </NuxtLink>
+
+      <div class="card-surface space-y-5">
+        <div>
+          <h1 class="text-2xl font-extrabold text-slate-900">Crea tu cuenta familiar</h1>
+          <p class="text-xs text-slate-600 mt-1">
+            Configura tu perfil de representante y el primer estudiante en menos de 1 minuto.
+          </p>
+        </div>
+
+        <div v-if="errorMsg" class="rounded-xl bg-rose-50 border border-rose-200 px-3.5 py-2.5 text-xs font-semibold text-rose-700">
+          {{ errorMsg }}
+        </div>
+
+        <form class="space-y-4" @submit.prevent="registrar">
+          <div class="space-y-3">
+            <div class="text-xs font-extrabold uppercase tracking-wider text-[#2563EB]">1. Datos del Representante</div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Tu nombre</label>
+                <input v-model="form.nombrePadre" required class="input-field" placeholder="Ej. María Contreras" />
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">País / Currículo</label>
+                <select v-model="form.pais" class="input-field">
+                  <option v-for="p in paises" :key="p.pais" :value="p.pais">{{ p.pais }}</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div class="sm:col-span-2">
+                <label class="block text-xs font-bold text-slate-700 mb-1">Correo electrónico</label>
+                <input
+                  v-model="form.correo"
+                  type="email"
+                  required
+                  autocapitalize="none"
+                  autocorrect="off"
+                  spellcheck="false"
+                  class="input-field"
+                  placeholder="familia@correo.com"
+                />
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">PIN Padres (4 díg.)</label>
+                <input
+                  v-model="form.pinParental"
+                  type="text"
+                  inputmode="numeric"
+                  maxlength="4"
+                  pattern="\d{4}"
+                  required
+                  class="input-field text-center font-bold tracking-widest"
+                />
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Contraseña (mín. 6)</label>
+                <div class="relative">
+                  <input
+                    v-model="form.password"
+                    :type="showPassword ? 'text' : 'password'"
+                    minlength="6"
+                    required
+                    class="input-field pr-10"
+                    placeholder="••••••••"
+                  />
+                  <button
+                    type="button"
+                    class="absolute right-3 top-2.5 text-slate-400 hover:text-slate-700"
+                    @click="showPassword = !showPassword"
+                  >
+                    <EyeOff v-if="showPassword" class="w-4 h-4" />
+                    <Eye v-else class="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Confirmar contraseña</label>
+                <input
+                  v-model="form.confirmPassword"
+                  :type="showPassword ? 'text' : 'password'"
+                  minlength="6"
+                  required
+                  class="input-field"
+                  placeholder="••••••••"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div class="pt-3 border-t border-slate-100 space-y-3">
+            <div class="text-xs font-extrabold uppercase tracking-wider text-emerald-600">2. Perfil del Estudiante</div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Nombre del alumno</label>
+                <input v-model="form.nombreAlumno" required class="input-field" placeholder="Ej. Sofía" />
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Grado escolar</label>
+                <select v-model="form.gradoAlumno" class="input-field">
+                  <option v-for="g in gradosPais" :key="g" :value="g">{{ g }}</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1.5">Elige su avatar</label>
+              <div class="flex flex-wrap gap-2">
+                <button
+                  v-for="av in avatares"
+                  :key="av"
+                  type="button"
+                  class="w-11 h-11 rounded-xl border-2 text-xl flex items-center justify-center transition"
+                  :class="form.avatarAlumno === av ? 'border-[#2563EB] bg-blue-50 scale-105' : 'border-slate-200 bg-white hover:bg-slate-50'"
+                  @click="form.avatarAlumno = av"
+                >
+                  {{ av }}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <button type="submit" class="btn-primary w-full" :disabled="loading">
+            {{ loading ? 'Creando cuenta...' : 'Crear cuenta y empezar a aprender' }}
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</template>

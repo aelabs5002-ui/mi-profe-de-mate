@@ -1,0 +1,10 @@
+{
+  "name": "Mi Profe de Mate — Tutor Matemático IA",
+  "short_name": "Profe Mate",
+  "description": "Web app de tutoría matemática con IA socrática, misiones cognitivas y portal de padres.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F7FAFC",
+  "theme_color": "#2563EB",
+  "lang": "es"
+}

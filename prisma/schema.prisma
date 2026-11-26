@@ -1,0 +1,195 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Base de datos PostgreSQL gestionada en Supabase
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Padre {
+  id           String   @id @default(cuid())
+  nombre       String
+  correo       String   @unique
+  passwordHash String
+  pinParental  String   @default("1234")
+  pais         String   @default("Venezuela")
+  creadoEn     DateTime @default(now())
+  ultimoAcceso DateTime?
+  alumnos      Alumno[]
+}
+
+model Alumno {
+  id                     String                @id @default(cuid())
+  padreId                String
+  nombre                 String
+  grado                  String                @default("1er Año")
+  avatar                 String                @default("🦊")
+  xp                     Int                   @default(0)
+  nivel                  Int                   @default(1)
+  rachaActual            Int                   @default(0)
+  mejorRacha             Int                   @default(0)
+  ultimaActividad        DateTime?
+  // Controles parentales reales
+  limiteMinutosDiario    Int                   @default(30)
+  minutosUsadosHoy       Int                   @default(0)
+  fechaUsoHoy            String?               // YYYY-MM-DD
+  diasPermitidosJson     String                @default("[0,1,2,3,4,5,6]")
+  maxPistasPorPaso       Int                   @default(2)
+  vozPermitida           Boolean               @default(true)
+  instruccionesPadre     String                @default("")
+  creadoEn               DateTime              @default(now())
+  padre                  Padre                 @relation(fields: [padreId], references: [id], onDelete: Cascade)
+  documentosBiblioteca   DocumentoBiblioteca[]
+  tareasSubidas          TareaSubida[]
+  misiones               Mision[]
+  intentos               Intento[]
+  competencias           CompetenciaCCA[]
+  erroresFrecuentes      ErrorFrecuenteCCA[]
+  sesionesJuego          SesionJuego[]
+}
+
+model DocumentoBiblioteca {
+  id              String   @id @default(cuid())
+  alumnoId        String
+  titulo          String
+  nombreArchivo   String
+  tipoMime        String   @default("application/pdf")
+  tipoDoc         String   @default("guia") // curriculo | libro | guia | otro
+  pais            String   @default("Venezuela")
+  grado           String   @default("1er Año")
+  temasJson       String   @default("[]")
+  resumenExtraido String   @default("")
+  prioridad       Int      @default(1) // 1 = máxima prioridad (PARENT_LIBRARY_FIRST)
+  activo          Boolean  @default(true)
+  creadoEn        DateTime @default(now())
+  alumno          Alumno   @relation(fields: [alumnoId], references: [id], onDelete: Cascade)
+
+  @@index([alumnoId, activo])
+}
+
+model TareaSubida {
+  id             String   @id @default(cuid())
+  alumnoId       String
+  nombreArchivo  String
+  tipoMime       String
+  archivoDataUrl String?  // Imagen o PDF pequeño para vista previa
+  textoExtraido  String   @default("")
+  temaDetectado  String   @default("Matemáticas")
+  ejerciciosJson String   @default("[]")
+  estado         String   @default("analizada") // pendiente | analizada | error
+  creadoEn       DateTime @default(now())
+  alumno         Alumno   @relation(fields: [alumnoId], references: [id], onDelete: Cascade)
+  misiones       Mision[]
+}
+
+model Mision {
+  id            String       @id @default(cuid())
+  alumnoId      String
+  tareaSubidaId String?
+  fechaClave    String       // YYYY-MM-DD
+  origen        String       @default("practica_ia") // practica_ia | tarea | refuerzo_cca
+  motorId       String       @default("F") // A | B | C | D | E | F | G | H
+  titulo        String
+  descripcion   String
+  tema          String
+  dificultad    Int          @default(2) // 1..5
+  estado        String       @default("en_progreso") // creada | en_progreso | completada
+  xpGanado      Int          @default(0)
+  precisionPct  Int          @default(0)
+  pistasUsadas  Int          @default(0)
+  duracionSeg   Int          @default(0)
+  contextoJson  String       @default("{}")
+  creadoEn      DateTime     @default(now())
+  completadaEn  DateTime?
+  alumno        Alumno       @relation(fields: [alumnoId], references: [id], onDelete: Cascade)
+  tareaSubida   TareaSubida? @relation(fields: [tareaSubidaId], references: [id], onDelete: SetNull)
+  pasos         PasoMision[]
+
+  @@index([alumnoId, fechaClave])
+}
+
+model PasoMision {
+  id                String    @id @default(cuid())
+  misionId          String
+  orden             Int
+  tema              String
+  enunciado         String
+  respuestaEsperada String
+  pistasJson        String    @default("[]")
+  explicacionBase   String    @default("")
+  estado            String    @default("pendiente") // pendiente | completado
+  intentosCount     Int       @default(0)
+  pistasUsadas      Int       @default(0)
+  mision            Mision    @relation(fields: [misionId], references: [id], onDelete: Cascade)
+  intentos          Intento[]
+
+  @@index([misionId, orden])
+}
+
+model Intento {
+  id             String     @id @default(cuid())
+  pasoId         String
+  alumnoId       String
+  respuesta      String
+  esCorrecta     Boolean
+  errorTag       String?    // signos | operaciones_basicas | fracciones | despeje | distribucion | igualdad | orden_operaciones | lectura | otro
+  feedbackIa     String
+  turnType       String     @default("evaluate") // evaluate | hint | scaffold | advance | close
+  moodDetectado  String     @default("normal")   // normal | frustrado | confiado | cansado
+  creadoEn       DateTime   @default(now())
+  paso           PasoMision @relation(fields: [pasoId], references: [id], onDelete: Cascade)
+  alumno         Alumno     @relation(fields: [alumnoId], references: [id], onDelete: Cascade)
+
+  @@index([alumnoId, creadoEn])
+}
+
+model CompetenciaCCA {
+  id                       String    @id @default(cuid())
+  alumnoId                 String
+  codigo                   String    // Ej. MAT-FRAC-01
+  tema                     String
+  grado                    String
+  nivelDominio             Int       @default(0) // 0..100
+  totalEjercicios          Int       @default(0)
+  correctos                Int       @default(0)
+  sesionesExitosasSinAyuda Int       @default(0) // SECC: 3 sesiones con >=90% y 0 pistas en dificultad >=2
+  certificada              Boolean   @default(false)
+  certificadaEn            DateTime?
+  motoresUsadosJson        String    @default("[]")
+  actualizadoEn            DateTime  @updatedAt
+  alumno                   Alumno    @relation(fields: [alumnoId], references: [id], onDelete: Cascade)
+
+  @@unique([alumnoId, codigo])
+}
+
+model ErrorFrecuenteCCA {
+  id           String   @id @default(cuid())
+  alumnoId     String
+  tema         String
+  errorTag     String
+  conteo       Int      @default(1)
+  superado     Boolean  @default(false)
+  ultimoEvento DateTime @default(now())
+  alumno       Alumno   @relation(fields: [alumnoId], references: [id], onDelete: Cascade)
+
+  @@unique([alumnoId, tema, errorTag])
+}
+
+model SesionJuego {
+  id           String   @id @default(cuid())
+  alumnoId     String
+  motorId      String   // A | C | F
+  tema         String
+  dificultad   Int      @default(2)
+  aciertos     Int
+  total        Int
+  rachaMaxima  Int      @default(0)
+  duracionSeg  Int      @default(0)
+  xpGanado     Int      @default(0)
+  creadoEn     DateTime @default(now())
+  alumno       Alumno   @relation(fields: [alumnoId], references: [id], onDelete: Cascade)
+
+  @@index([alumnoId, creadoEn])
+}
