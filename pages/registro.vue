@@ -18,15 +18,19 @@ const form = reactive({
   password: '',
   confirmPassword: '',
   pais: 'Venezuela',
+  paisLibre: '',
   pinParental: '1234',
   nombreAlumno: '',
   gradoAlumno: '1er Año (Secundaria)',
   avatarAlumno: '🦊'
 })
 
+const esOpcionLibre = computed(() => form.pais === 'Libre / Internacional')
+
 const gradosPais = computed(() => {
   const found = paises.value.find((p) => p.pais === form.pais)
-  return found?.grados || ['5to Grado (Primaria)', '1er Año (Secundaria)']
+  const fallback = paises.value.find((p) => p.pais === 'Libre / Internacional')
+  return found?.grados || fallback?.grados || ['Nivel Básico (9–10 años)', 'Secundaria Inicial (12–13 años)', 'Práctica Libre (Todos los niveles)']
 })
 
 watch(
@@ -50,13 +54,14 @@ const registrar = async () => {
   }
   loading.value = true
   try {
+    const paisFinal = esOpcionLibre.value && form.paisLibre.trim() ? form.paisLibre.trim() : form.pais
     const res = await $fetch<{ padre: any; alumnoActivo: any }>('/api/auth/register', {
       method: 'POST',
       body: {
         nombrePadre: form.nombrePadre,
         correo: form.correo.trim(),
         password: form.password,
-        pais: form.pais,
+        pais: paisFinal,
         pinParental: form.pinParental,
         nombreAlumno: form.nombreAlumno,
         gradoAlumno: form.gradoAlumno,
@@ -108,6 +113,18 @@ const registrar = async () => {
                   <option v-for="p in paises" :key="p.pais" :value="p.pais">{{ p.pais }}</option>
                 </select>
               </div>
+            </div>
+
+            <div v-if="esOpcionLibre">
+              <label class="block text-xs font-bold text-slate-700 mb-1">
+                País o modalidad personalizada (opcional)
+              </label>
+              <input
+                v-model="form.paisLibre"
+                type="text"
+                class="input-field"
+                placeholder="Ej. Educación en casa, Brasil, Internacional..."
+              />
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">

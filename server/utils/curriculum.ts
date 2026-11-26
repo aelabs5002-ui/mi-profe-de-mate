@@ -24,6 +24,72 @@ export const PAISES_CURRICULO = [
     ]
   },
   {
+    pais: 'Paraguay',
+    grados: [
+      '4° Grado (EEB)',
+      '5° Grado (EEB)',
+      '6° Grado (EEB)',
+      '7° Grado (EEB)',
+      '8° Grado (EEB)',
+      '9° Grado (EEB)',
+      '1° Año (Nivel Medio)',
+      '2° Año (Nivel Medio)',
+      '3° Año (Nivel Medio)'
+    ]
+  },
+  {
+    pais: 'Argentina',
+    grados: ['4° Primaria', '5° Primaria', '6° Primaria', '1° Secundaria', '2° Secundaria', '3° Secundaria', '4° Secundaria', '5° Secundaria', '6° Secundaria']
+  },
+  {
+    pais: 'Bolivia',
+    grados: ['4° Primaria', '5° Primaria', '6° Primaria', '1° Secundaria', '2° Secundaria', '3° Secundaria', '4° Secundaria', '5° Secundaria', '6° Secundaria']
+  },
+  {
+    pais: 'Chile',
+    grados: ['4° Básico', '5° Básico', '6° Básico', '7° Básico', '8° Básico', '1° Medio', '2° Medio', '3° Medio', '4° Medio']
+  },
+  {
+    pais: 'Colombia',
+    grados: ['4° Primaria', '5° Primaria', '6° Bachillerato', '7° Bachillerato', '8° Bachillerato', '9° Bachillerato', '10° Media', '11° Media']
+  },
+  {
+    pais: 'Costa Rica',
+    grados: ['4° Primaria', '5° Primaria', '6° Primaria', '7° Tercer Ciclo', '8° Tercer Ciclo', '9° Tercer Ciclo', '10° Diversificada', '11° Diversificada']
+  },
+  {
+    pais: 'Ecuador',
+    grados: ['4° EGB', '5° EGB', '6° EGB', '7° EGB', '8° EGB', '9° EGB', '10° EGB', '1° Bachillerato', '2° Bachillerato', '3° Bachillerato']
+  },
+  {
+    pais: 'El Salvador',
+    grados: ['4° Grado', '5° Grado', '6° Grado', '7° Grado', '8° Grado', '9° Grado', '1° Bachillerato', '2° Bachillerato']
+  },
+  {
+    pais: 'España',
+    grados: ['4° Primaria', '5° Primaria', '6° Primaria', '1° ESO', '2° ESO', '3° ESO', '4° ESO', '1° Bachillerato', '2° Bachillerato']
+  },
+  {
+    pais: 'Guatemala',
+    grados: ['4° Primaria', '5° Primaria', '6° Primaria', '1° Básico', '2° Básico', '3° Básico', '4° Diversificado', '5° Diversificado']
+  },
+  {
+    pais: 'Honduras',
+    grados: ['4° Grado', '5° Grado', '6° Grado', '7° Grado', '8° Grado', '9° Grado', '10° Media', '11° Media']
+  },
+  {
+    pais: 'México',
+    grados: ['4° Primaria', '5° Primaria', '6° Primaria', '1° Secundaria', '2° Secundaria', '3° Secundaria', '1° Preparatoria', '2° Preparatoria', '3° Preparatoria']
+  },
+  {
+    pais: 'Nicaragua',
+    grados: ['4° Primaria', '5° Primaria', '6° Primaria', '7° Secundaria', '8° Secundaria', '9° Secundaria', '10° Secundaria', '11° Secundaria']
+  },
+  {
+    pais: 'Panamá',
+    grados: ['4° Primaria', '5° Primaria', '6° Primaria', '7° Premedia', '8° Premedia', '9° Premedia', '10° Media', '11° Media', '12° Media']
+  },
+  {
     pais: 'Perú',
     grados: [
       '4to Primaria',
@@ -37,16 +103,27 @@ export const PAISES_CURRICULO = [
     ]
   },
   {
-    pais: 'Colombia',
-    grados: ['4° Primaria', '5° Primaria', '6° Bachillerato', '7° Bachillerato', '8° Bachillerato', '9° Bachillerato', '10° Media', '11° Media']
+    pais: 'República Dominicana',
+    grados: ['4° Primaria', '5° Primaria', '6° Primaria', '1° Secundaria', '2° Secundaria', '3° Secundaria', '4° Secundaria', '5° Secundaria', '6° Secundaria']
   },
   {
-    pais: 'México',
-    grados: ['4° Primaria', '5° Primaria', '6° Primaria', '1° Secundaria', '2° Secundaria', '3° Secundaria', '1° Preparatoria']
+    pais: 'Uruguay',
+    grados: ['4° Primaria', '5° Primaria', '6° Primaria', '7° EBI', '8° EBI', '9° EBI', '1° Bachillerato', '2° Bachillerato', '3° Bachillerato']
   },
   {
-    pais: 'Chile',
-    grados: ['4° Básico', '5° Básico', '6° Básico', '7° Básico', '8° Básico', '1° Medio', '2° Medio']
+    pais: 'Estados Unidos / Puerto Rico',
+    grados: ['4th Grade', '5th Grade', '6th Grade', '7th Grade', '8th Grade', '9th Grade', '10th Grade', '11th Grade', '12th Grade']
+  },
+  {
+    pais: 'Libre / Internacional',
+    grados: [
+      'Nivel Básico (9–10 años)',
+      'Nivel Intermedio (11–12 años)',
+      'Secundaria Inicial (12–13 años)',
+      'Secundaria Media (14–15 años)',
+      'Bachillerato / Preuniversitario (16+ años)',
+      'Práctica Libre (Todos los niveles)'
+    ]
   }
 ]
 

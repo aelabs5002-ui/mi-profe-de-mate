@@ -10,8 +10,10 @@ const { data: catalogo } = await useFetch<{
 }>('/api/catalogo')
 
 const grados = computed(() => {
-  const found = catalogo.value?.paises.find((p) => p.pais === padre.value?.pais)
-  return found?.grados || ['5to Grado (Primaria)', '1er Año (Secundaria)']
+  const list = catalogo.value?.paises || []
+  const found = list.find((p) => p.pais === padre.value?.pais)
+  const libre = list.find((p) => p.pais === 'Libre / Internacional')
+  return found?.grados || libre?.grados || ['Nivel Básico (9–10 años)', 'Secundaria Inicial (12–13 años)', 'Práctica Libre (Todos los niveles)']
 })
 const avatares = computed(() => catalogo.value?.avatares || ['🦊', '🦁', '🦉', '🐼'])
 

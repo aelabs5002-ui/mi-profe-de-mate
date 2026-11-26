@@ -17,14 +17,21 @@ const DIAS = [
   { id: 0, label: 'Dom' }
 ]
 
+const paisesLista = computed(() => catalogo.value?.paises || [])
+const paisGuardado = data.value?.padre?.pais || 'Venezuela'
+const estaEnLista = computed(() => paisesLista.value.some((p) => p.pais === paisGuardado))
+
 const form = reactive({
-  pais: data.value?.padre?.pais || 'Venezuela',
+  pais: estaEnLista.value ? paisGuardado : 'Libre / Internacional',
+  paisLibre: estaEnLista.value ? '' : paisGuardado,
   pinParental: '',
   limiteMinutosDiario: data.value?.alumno?.limiteMinutosDiario ?? 30,
   diasPermitidos: (data.value?.alumno?.diasPermitidos as number[]) || [0, 1, 2, 3, 4, 5, 6],
   maxPistasPorPaso: data.value?.alumno?.maxPistasPorPaso ?? 2,
   instruccionesPadre: data.value?.alumno?.instruccionesPadre || ''
 })
+
+const esOpcionLibre = computed(() => form.pais === 'Libre / Internacional')
 
 const toggleDia = (d: number) => {
   if (form.diasPermitidos.includes(d)) {
@@ -43,11 +50,12 @@ const guardar = async () => {
   okMsg.value = ''
   saving.value = true
   try {
+    const paisFinal = esOpcionLibre.value && form.paisLibre.trim() ? form.paisLibre.trim() : form.pais
     await $fetch('/api/padres/controles', {
       method: 'PUT',
       body: {
         alumnoId: data.value?.alumno?.id,
-        pais: form.pais,
+        pais: paisFinal,
         ...(form.pinParental.length === 4 ? { pinParental: form.pinParental } : {}),
         limiteMinutosDiario: form.limiteMinutosDiario,
         diasPermitidos: form.diasPermitidos,
@@ -83,8 +91,15 @@ const guardar = async () => {
         <div>
           <label class="block text-xs font-bold text-slate-700 mb-1">País / Currículo Escolar</label>
           <select v-model="form.pais" class="input-field">
-            <option v-for="p in catalogo?.paises || []" :key="p.pais" :value="p.pais">{{ p.pais }}</option>
+            <option v-for="p in paisesLista" :key="p.pais" :value="p.pais">{{ p.pais }}</option>
           </select>
+          <input
+            v-if="esOpcionLibre"
+            v-model="form.paisLibre"
+            type="text"
+            class="input-field mt-2"
+            placeholder="Escribe país o modalidad libre (ej. Homeschooling)"
+          />
         </div>
         <div>
           <label class="block text-xs font-bold text-slate-700 mb-1">Cambiar PIN Parental (opcional, 4 dígitos)</label>
