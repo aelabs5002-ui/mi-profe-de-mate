@@ -54,16 +54,11 @@ async function callGemini(parts: Array<Record<string, any>>, systemInstruction?:
   const { apiKey, model } = getGeminiConfig()
   if (!apiKey) return null
 
-  const isVertexExpress = apiKey.startsWith('AQ.')
-  const endpoint = isVertexExpress
-    ? `https://aiplatform.googleapis.com/v1/publishers/google/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`
-    : `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`
-
   const body: Record<string, any> = {
     contents: [{ role: 'user', parts }],
     generationConfig: {
       temperature: 0.4,
-      maxOutputTokens: 1024,
+      maxOutputTokens: 2048,
       responseMimeType: 'application/json'
     }
   }
@@ -71,19 +66,38 @@ async function callGemini(parts: Array<Record<string, any>>, systemInstruction?:
     body.systemInstruction = { parts: [{ text: systemInstruction }] }
   }
 
-  try {
-    const res = await fetch(endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    })
-    if (!res.ok) return null
-    const data: any = await res.json()
-    const text = data?.candidates?.[0]?.content?.parts?.map((p: any) => p.text || '').join('') || ''
-    return text.trim() || null
-  } catch {
-    return null
+  const modelos = Array.from(new Set([model, 'gemini-3.8-flash', 'gemini-3-flash-preview', 'gemini-2.5-flash']))
+  const payload = JSON.stringify(body)
+
+  for (const m of modelos) {
+    const endpoints = apiKey.startsWith('AQ.')
+      ? [
+          `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent`,
+          `https://aiplatform.googleapis.com/v1/publishers/google/models/${m}:generateContent?key=${encodeURIComponent(apiKey)}`
+        ]
+      : [`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent`]
+
+    for (const endpoint of endpoints) {
+      try {
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-goog-api-key': apiKey
+          },
+          body: payload
+        })
+        if (!res.ok) continue
+        const data: any = await res.json()
+        const text = data?.candidates?.[0]?.content?.parts?.map((p: any) => p.text || '').join('') || ''
+        if (text.trim()) return text.trim()
+      } catch {
+        continue
+      }
+    }
   }
+
+  return null
 }
 
 export async function generateSocraticFeedback(params: {
