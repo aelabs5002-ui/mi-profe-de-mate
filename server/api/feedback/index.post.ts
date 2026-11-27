@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { prisma } from '~/server/utils/prisma'
 import { getSessionContext } from '~/server/utils/auth'
+import { ensureFeedbackTable } from '~/server/utils/feedbackTable'
 
 const schema = z.object({
   autorTipo: z.enum(['padre', 'alumno', 'visitante']).default('padre'),
@@ -33,6 +34,8 @@ export default defineEventHandler(async (event) => {
       : padre
         ? `${padre.nombre} (${padre.pais})`
         : 'Visitante'
+
+  await ensureFeedbackTable()
 
   const item = await prisma.feedbackPrueba.create({
     data: {
