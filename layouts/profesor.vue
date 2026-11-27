@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { GraduationCap, Users, LogOut } from 'lucide-vue-next'
+import { GraduationCap, Users, HelpCircle, LogOut } from 'lucide-vue-next'
 
 const route = useRoute()
 const { profesor, logoutProfesor } = useProfesorSession()
@@ -31,6 +31,13 @@ const { profesor, logoutProfesor } = useProfesorSession()
           >
             <Users class="w-4 h-4" />
             <span class="hidden sm:inline">Mis Estudiantes</span>
+          </NuxtLink>
+          <NuxtLink
+            to="/ayuda"
+            class="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-slate-100 text-xs font-bold inline-flex items-center gap-1.5 transition"
+          >
+            <HelpCircle class="w-4 h-4" />
+            <span class="hidden sm:inline">Ayuda</span>
           </NuxtLink>
           <button
             type="button"

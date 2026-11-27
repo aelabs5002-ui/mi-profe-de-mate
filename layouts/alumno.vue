@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Target, Brain, Gamepad2, Award, User, Flame, Zap, Shield } from 'lucide-vue-next'
+import { Target, Brain, Gamepad2, Award, User, Flame, Zap, Shield, HelpCircle } from 'lucide-vue-next'
 
 const route = useRoute()
 const { padre, alumnoActivo } = useSession()
@@ -83,7 +83,14 @@ const isActive = (path: string) => {
           </NuxtLink>
         </nav>
 
-        <div class="p-4 border-t border-slate-100">
+        <div class="p-4 border-t border-slate-100 space-y-2">
+          <NuxtLink
+            to="/ayuda"
+            class="w-full flex items-center justify-center gap-2 rounded-xl bg-slate-50 hover:bg-blue-50 border border-slate-200 py-2 text-xs font-bold text-slate-600 hover:text-[#2563EB] transition"
+          >
+            <HelpCircle class="w-4 h-4" />
+            Guía de Uso
+          </NuxtLink>
           <NuxtLink
             to="/padres"
             class="w-full flex items-center justify-center gap-2 rounded-xl border border-slate-200 hover:border-[#2563EB] hover:text-[#2563EB] py-2.5 text-xs font-bold text-slate-600 transition"
@@ -119,6 +126,14 @@ const isActive = (path: string) => {
             <span class="pill-xp">
               <Zap class="w-3.5 h-3.5" /> {{ alumnoActivo?.xp || 0 }} XP
             </span>
+            <NuxtLink
+              to="/ayuda"
+              class="lg:hidden p-2 rounded-xl border border-slate-200 text-slate-600 hover:text-[#2563EB]"
+              title="Guía de Uso"
+              aria-label="Guía de Uso"
+            >
+              <HelpCircle class="w-4 h-4" />
+            </NuxtLink>
             <NuxtLink
               to="/padres"
               class="lg:hidden p-2 rounded-xl border border-slate-200 text-slate-600 hover:text-[#2563EB]"

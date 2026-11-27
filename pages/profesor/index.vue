@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Link2, Users, Award, AlertTriangle, ArrowRight, Flame, CheckCircle2 } from 'lucide-vue-next'
+import { Link2, Users, Award, AlertTriangle, ArrowRight, Flame, CheckCircle2, Share2, Copy, RefreshCw, Save } from 'lucide-vue-next'
 
 definePageMeta({ layout: 'profesor' })
 
@@ -9,6 +9,61 @@ const codigoInput = ref('')
 const linking = ref(false)
 const linkMsg = ref('')
 const linkErr = ref('')
+
+// Invitación docente (Profesor -> Padre/Alumno)
+const copiedLink = ref(false)
+const editandoMsg = ref(false)
+const mensajeInvitacion = ref(data.value?.invitacion?.mensajeBienvenida || '')
+const savingInv = ref(false)
+const invOk = ref('')
+
+watch(
+  () => data.value?.invitacion?.mensajeBienvenida,
+  (val) => {
+    if (val !== undefined && !savingInv.value) mensajeInvitacion.value = val
+  }
+)
+
+const enlaceInvitacion = computed(() => {
+  const code = data.value?.invitacion?.codigo || ''
+  if (!code) return ''
+  const origin = import.meta.client ? window.location.origin : ''
+  return `${origin}/registro?profe=${encodeURIComponent(code)}`
+})
+
+const copiarEnlace = async () => {
+  if (!enlaceInvitacion.value || !import.meta.client) return
+  await navigator.clipboard.writeText(enlaceInvitacion.value)
+  copiedLink.value = true
+  setTimeout(() => (copiedLink.value = false), 2200)
+}
+
+const enlaceWhatsapp = computed(() => {
+  if (!enlaceInvitacion.value) return '#'
+  const nombreProfe = data.value?.profesor?.nombre || 'tu profesor de matemáticas'
+  const msg = data.value?.invitacion?.mensajeBienvenida || 'Te invito a practicar matemáticas con seguimiento personalizado.'
+  const texto = `¡Hola! Soy ${nombreProfe}. ${msg}\n\nCrea tu cuenta familiar gratuita en Mi Profe de Mate desde este enlace para que tu hijo/a quede vinculado automáticamente a mis clases/tutorías:\n${enlaceInvitacion.value}\n\n(Si ya tienen cuenta, entren a Portal Padres → Profesores y usen el código: ${data.value?.invitacion?.codigo})`
+  return `https://wa.me/?text=${encodeURIComponent(texto)}`
+})
+
+const guardarInvitacion = async (regenerar = false) => {
+  invOk.value = ''
+  savingInv.value = true
+  try {
+    await $fetch('/api/profesor/invitacion/config', {
+      method: 'POST',
+      body: {
+        mensajeBienvenida: mensajeInvitacion.value,
+        regenerar
+      }
+    })
+    editandoMsg.value = false
+    invOk.value = regenerar ? 'Código de invitación regenerado.' : 'Mensaje de invitación guardado.'
+    await refresh()
+  } finally {
+    savingInv.value = false
+  }
+}
 
 const vincularEstudiante = async () => {
   if (!codigoInput.value.trim() || linking.value) return
@@ -71,6 +126,74 @@ const vincularEstudiante = async () => {
       <div v-if="linkErr" class="rounded-xl bg-rose-500/25 border border-rose-300/40 px-3.5 py-2 text-xs font-bold text-white">
         {{ linkErr }}
       </div>
+    </section>
+
+    <!-- Invitar alumnos y padres con 1 enlace (ideal para clases adicionales y tutorías) -->
+    <section v-if="data?.invitacion?.codigo" class="card-surface border-emerald-200 bg-emerald-50/40 space-y-3.5">
+      <div class="flex items-start justify-between gap-3 flex-wrap">
+        <div>
+          <span class="text-[11px] font-extrabold uppercase tracking-wider text-emerald-700 inline-flex items-center gap-1">
+            <Share2 class="w-3.5 h-3.5" /> Clases adicionales y tutorías
+          </span>
+          <h2 class="text-base sm:text-lg font-extrabold text-slate-900">
+            Envía tu enlace de invitación a padres y alumnos
+          </h2>
+          <p class="text-xs text-slate-600 mt-0.5">
+            Cuando una familia se registra desde tu enlace, su hijo/a queda <strong>vinculado automáticamente contigo</strong>. Si ya tienen cuenta, solo usan tu código <strong class="text-emerald-800">{{ data.invitacion.codigo }}</strong>.
+          </p>
+        </div>
+        <button
+          type="button"
+          class="text-xs font-bold text-slate-500 hover:text-indigo-600 inline-flex items-center gap-1"
+          :disabled="savingInv"
+          @click="guardarInvitacion(true)"
+        >
+          <RefreshCw class="w-3.5 h-3.5" /> Regenerar código
+        </button>
+      </div>
+
+      <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+        <div class="flex-1 rounded-xl bg-white border border-emerald-200 px-3.5 py-2.5 text-xs font-mono text-slate-700 truncate select-all">
+          {{ enlaceInvitacion || `/registro?profe=${data.invitacion.codigo}` }}
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+          <button type="button" class="btn-primary text-xs py-2.5 px-4" @click="copiarEnlace">
+            <Copy class="w-4 h-4" /> {{ copiedLink ? '¡Enlace copiado!' : 'Copiar enlace' }}
+          </button>
+          <a
+            :href="enlaceWhatsapp"
+            target="_blank"
+            rel="noopener"
+            class="btn-success text-xs py-2.5 px-4"
+          >
+            <Share2 class="w-4 h-4" /> WhatsApp
+          </a>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between gap-2 flex-wrap text-xs">
+        <span class="text-slate-600">
+          Código corto: <strong class="font-mono text-emerald-800 tracking-wider">{{ data.invitacion.codigo }}</strong>
+        </span>
+        <button type="button" class="font-bold text-indigo-600 hover:underline" @click="editandoMsg = !editandoMsg">
+          {{ editandoMsg ? 'Ocultar mensaje' : 'Personalizar mensaje de invitación' }}
+        </button>
+      </div>
+
+      <form v-if="editandoMsg" class="flex flex-col sm:flex-row gap-2 pt-1" @submit.prevent="guardarInvitacion(false)">
+        <input
+          v-model="mensajeInvitacion"
+          type="text"
+          maxlength="300"
+          class="input-field bg-white text-xs flex-1"
+          placeholder="Ej. Te invito a mis tutorías de matemáticas para reforzar antes del examen."
+        />
+        <button type="submit" class="btn-primary text-xs py-2 px-4 shrink-0" :disabled="savingInv">
+          <Save class="w-3.5 h-3.5" /> Guardar
+        </button>
+      </form>
+
+      <div v-if="invOk" class="text-xs font-bold text-emerald-700">{{ invOk }}</div>
     </section>
 
     <!-- KPIs del grupo -->

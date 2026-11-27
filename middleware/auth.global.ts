@@ -1,4 +1,9 @@
 export default defineNuxtRouteMiddleware(async (to) => {
+  // Página de ayuda/tutorial accesible libremente para cualquier rol o visitante
+  if (to.path === '/ayuda') {
+    return
+  }
+
   // Rutas del Portal Profesor (autenticación independiente de familias)
   if (to.path.startsWith('/profesor')) {
     const { fetchProfesorMe } = useProfesorSession()
@@ -26,6 +31,9 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
   if (publicRoutes.includes(to.path)) {
     if (padre) {
+      if (to.path === '/registro' && to.query.profe) {
+        return navigateTo(`/padres/profesores?profe=${encodeURIComponent(String(to.query.profe))}`)
+      }
       return navigateTo(alumnoActivo ? '/alumno' : '/seleccionar-alumno')
     }
     return

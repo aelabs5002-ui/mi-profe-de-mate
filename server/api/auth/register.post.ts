@@ -2,6 +2,7 @@ import bcrypt from 'bcryptjs'
 import { z } from 'zod'
 import { prisma } from '~/server/utils/prisma'
 import { createSessionToken, sanitizePadre, setActiveStudentCookie, setAuthCookie } from '~/server/utils/auth'
+import { ensureProfesorTables } from '~/server/utils/profesorTables'
 
 const registerSchema = z.object({
   nombrePadre: z.string().trim().min(2, 'Ingresa tu nombre'),
@@ -11,7 +12,8 @@ const registerSchema = z.object({
   pinParental: z.string().trim().regex(/^\d{4}$/, 'El PIN parental debe tener 4 dígitos').default('1234'),
   nombreAlumno: z.string().trim().min(2, 'Ingresa el nombre del estudiante'),
   gradoAlumno: z.string().trim().min(2, 'Selecciona el grado escolar'),
-  avatarAlumno: z.string().trim().default('🦊')
+  avatarAlumno: z.string().trim().default('🦊'),
+  codigoProfesor: z.string().trim().max(24).optional()
 })
 
 export default defineEventHandler(async (event) => {
@@ -58,6 +60,34 @@ export default defineEventHandler(async (event) => {
   })
 
   const primerAlumno = padre.alumnos[0]
+
+  // Si la familia entró mediante el enlace de invitación de un profesor, vincular automáticamente
+  let profesorVinculado: string | null = null
+  if (primerAlumno && d.codigoProfesor && d.codigoProfesor.trim().length >= 4) {
+    try {
+      await ensureProfesorTables()
+      const codigoNorm = d.codigoProfesor.trim().toUpperCase()
+      const inv = await prisma.codigoInvitacionProfesor.findUnique({
+        where: { codigo: codigoNorm },
+        include: { profesor: { select: { id: true, nombre: true } } }
+      })
+      if (inv) {
+        await prisma.vinculoProfesor.upsert({
+          where: { profesorId_alumnoId: { profesorId: inv.profesor.id, alumnoId: primerAlumno.id } },
+          update: { activo: true, codigoUsado: codigoNorm },
+          create: {
+            profesorId: inv.profesor.id,
+            alumnoId: primerAlumno.id,
+            codigoUsado: codigoNorm
+          }
+        })
+        profesorVinculado = inv.profesor.nombre
+      }
+    } catch {
+      // No bloquear el registro si el código es inválido
+    }
+  }
+
   const token = await createSessionToken({
     padreId: padre.id,
     correo: padre.correo,
@@ -70,6 +100,7 @@ export default defineEventHandler(async (event) => {
 
   return {
     padre: sanitizePadre(padre),
-    alumnoActivo: primerAlumno || null
+    alumnoActivo: primerAlumno || null,
+    profesorVinculado
   }
 })

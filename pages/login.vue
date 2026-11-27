@@ -161,9 +161,13 @@ const entrarDemo = async () => {
         <ArrowRight class="w-4 h-4 text-indigo-600 shrink-0" />
       </NuxtLink>
 
-      <p class="text-center text-xs text-slate-500">
-        🧠 Constitución Pedagógica: el error es útil y parte del aprendizaje.
-      </p>
+      <div class="flex items-center justify-center gap-3 text-xs text-slate-500">
+        <span>🧠 El error es útil para aprender</span>
+        <span>·</span>
+        <NuxtLink to="/ayuda" class="font-extrabold text-[#2563EB] hover:underline">
+          Ver tutorial de uso
+        </NuxtLink>
+      </div>
     </div>
   </div>
 </template>

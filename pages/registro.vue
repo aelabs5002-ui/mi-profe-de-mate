@@ -1,13 +1,30 @@
 <script setup lang="ts">
-import { ArrowLeft, Eye, EyeOff } from 'lucide-vue-next'
+import { ArrowLeft, Eye, EyeOff, GraduationCap } from 'lucide-vue-next'
 
 definePageMeta({ layout: false })
 
+const route = useRoute()
 const { setSession, fetchMe } = useSession()
 const { data: catalogo } = await useFetch<{
   paises: Array<{ pais: string; grados: string[] }>
   avatares: string[]
 }>('/api/catalogo')
+
+// Si viene desde un enlace de invitación de un profesor (/registro?profe=CODIGO)
+const codigoProfesor = computed(() => (route.query.profe ? String(route.query.profe).trim().toUpperCase() : ''))
+const invitacionProfe = ref<{
+  codigo: string
+  mensajeBienvenida: string
+  profesor: { nombre: string; institucion: string; pais: string }
+} | null>(null)
+
+if (codigoProfesor.value) {
+  try {
+    invitacionProfe.value = await $fetch(`/api/profesor/invitacion/${encodeURIComponent(codigoProfesor.value)}`)
+  } catch {
+    invitacionProfe.value = null
+  }
+}
 
 const paises = computed(() => catalogo.value?.paises || [])
 const avatares = computed(() => catalogo.value?.avatares || ['🦊', '🦁', '🦉', '🐼'])
@@ -65,7 +82,8 @@ const registrar = async () => {
         pinParental: form.pinParental,
         nombreAlumno: form.nombreAlumno,
         gradoAlumno: form.gradoAlumno,
-        avatarAlumno: form.avatarAlumno
+        avatarAlumno: form.avatarAlumno,
+        ...(codigoProfesor.value ? { codigoProfesor: codigoProfesor.value } : {})
       }
     })
     setSession(res.padre, res.alumnoActivo)
@@ -85,6 +103,27 @@ const registrar = async () => {
       <NuxtLink to="/login" class="inline-flex items-center gap-1.5 text-sm font-bold text-[#2563EB] hover:underline">
         <ArrowLeft class="w-4 h-4" /> Volver al inicio de sesión
       </NuxtLink>
+
+      <div v-if="invitacionProfe" class="rounded-2xl bg-indigo-600 text-white p-4 shadow-soft flex items-start gap-3">
+        <div class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+          <GraduationCap class="w-5 h-5" />
+        </div>
+        <div class="space-y-0.5 text-xs">
+          <div class="font-extrabold uppercase tracking-wider text-indigo-200">Invitación de tu Profesor</div>
+          <div class="font-display font-extrabold text-sm">
+            {{ invitacionProfe.profesor.nombre }}
+            <span v-if="invitacionProfe.profesor.institucion" class="font-normal text-indigo-100">
+              · {{ invitacionProfe.profesor.institucion }}
+            </span>
+          </div>
+          <p v-if="invitacionProfe.mensajeBienvenida" class="text-indigo-100 leading-relaxed">
+            "{{ invitacionProfe.mensajeBienvenida }}"
+          </p>
+          <p class="text-[11px] text-emerald-200 font-bold pt-0.5">
+            ✓ Al crear tu cuenta, tu hijo/a quedará vinculado automáticamente con su profesor.
+          </p>
+        </div>
+      </div>
 
       <div class="card-surface space-y-5">
         <div>

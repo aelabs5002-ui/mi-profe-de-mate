@@ -214,15 +214,25 @@ model FeedbackPrueba {
 }
 
 model Profesor {
-  id           String            @id @default(cuid())
-  nombre       String
-  correo       String            @unique
-  passwordHash String
-  pais         String            @default("Venezuela")
-  institucion  String            @default("")
-  creadoEn     DateTime          @default(now())
-  ultimoAcceso DateTime?
-  vinculos     VinculoProfesor[]
+  id               String                    @id @default(cuid())
+  nombre           String
+  correo           String                    @unique
+  passwordHash     String
+  pais             String                    @default("Venezuela")
+  institucion      String                    @default("")
+  creadoEn         DateTime                  @default(now())
+  ultimoAcceso     DateTime?
+  vinculos         VinculoProfesor[]
+  codigoInvitacion CodigoInvitacionProfesor?
+}
+
+model CodigoInvitacionProfesor {
+  id                String   @id @default(cuid())
+  profesorId        String   @unique
+  codigo            String   @unique
+  mensajeBienvenida String   @default("")
+  creadoEn          DateTime @default(now())
+  profesor          Profesor @relation(fields: [profesorId], references: [id], onDelete: Cascade)
 }
 
 model CodigoVinculacionAlumno {

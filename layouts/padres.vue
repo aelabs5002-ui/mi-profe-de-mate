@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BarChart3, BookOpen, SlidersHorizontal, GraduationCap, ArrowLeft, LogOut, Lock } from 'lucide-vue-next'
+import { BarChart3, BookOpen, SlidersHorizontal, GraduationCap, HelpCircle, ArrowLeft, LogOut, Lock } from 'lucide-vue-next'
 
 const route = useRoute()
 const { padre, padresDesbloqueado, logout } = useSession()
@@ -126,6 +126,9 @@ const verificarPin = async () => {
             <span class="font-display font-extrabold text-slate-900">Portal de Padres · {{ padre?.pais }}</span>
           </div>
           <div class="flex items-center gap-2">
+            <NuxtLink to="/ayuda" class="btn-secondary text-xs py-1.5 px-3 inline-flex items-center gap-1">
+              <HelpCircle class="w-3.5 h-3.5" /> Ayuda
+            </NuxtLink>
             <NuxtLink to="/alumno" class="hidden sm:inline-flex btn-secondary text-xs py-1.5 px-3">
               Modo Alumno
             </NuxtLink>

@@ -1,9 +1,11 @@
 import { prisma } from '~/server/utils/prisma'
 import { requireProfesor } from '~/server/utils/profesorAuth'
+import { ensureProfesorInviteCode } from '~/server/utils/profesorTables'
 import { ERROR_TAG_LABELS, type ErrorTag } from '~/server/utils/errorTagger'
 
 export default defineEventHandler(async (event) => {
   const profesor = await requireProfesor(event)
+  const invitacion = await ensureProfesorInviteCode(profesor)
 
   const vinculos = await prisma.vinculoProfesor.findMany({
     where: { profesorId: profesor.id, activo: true },
@@ -85,6 +87,10 @@ export default defineEventHandler(async (event) => {
       nombre: profesor.nombre,
       institucion: profesor.institucion,
       pais: profesor.pais
+    },
+    invitacion: {
+      codigo: invitacion.codigo,
+      mensajeBienvenida: invitacion.mensajeBienvenida
     },
     resumenGrupo: {
       totalEstudiantes: estudiantes.length,

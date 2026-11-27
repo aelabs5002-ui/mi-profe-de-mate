@@ -79,9 +79,14 @@ const entrarDemo = async () => {
 <template>
   <div class="min-h-screen bg-gradient-to-b from-indigo-50/70 via-[#F7FAFC] to-blue-50/40 flex items-center justify-center p-4 py-8">
     <div class="w-full max-w-md space-y-5">
-      <NuxtLink to="/login" class="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-[#2563EB]">
-        <ArrowLeft class="w-4 h-4" /> Volver al acceso de Familias / Alumnos
-      </NuxtLink>
+      <div class="flex items-center justify-between gap-2">
+        <NuxtLink to="/login" class="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-[#2563EB]">
+          <ArrowLeft class="w-4 h-4" /> Volver a Familias / Alumnos
+        </NuxtLink>
+        <NuxtLink to="/ayuda" class="text-xs font-extrabold text-indigo-600 hover:underline">
+          Ver tutorial de uso
+        </NuxtLink>
+      </div>
 
       <div class="text-center space-y-2">
         <div class="w-16 h-16 mx-auto rounded-3xl bg-indigo-600 text-white flex items-center justify-center shadow-soft">

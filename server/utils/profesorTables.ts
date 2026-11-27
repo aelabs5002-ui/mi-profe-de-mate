@@ -64,7 +64,66 @@ export async function ensureProfesorTables() {
     `CREATE INDEX IF NOT EXISTS "VinculoProfesor_alumnoId_activo_idx" ON "VinculoProfesor"("alumnoId", "activo");`
   )
 
+  await prisma.$executeRawUnsafe(`
+    CREATE TABLE IF NOT EXISTS "CodigoInvitacionProfesor" (
+      "id" TEXT NOT NULL,
+      "profesorId" TEXT NOT NULL,
+      "codigo" TEXT NOT NULL,
+      "mensajeBienvenida" TEXT NOT NULL DEFAULT '',
+      "creadoEn" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "CodigoInvitacionProfesor_pkey" PRIMARY KEY ("id"),
+      CONSTRAINT "CodigoInvitacionProfesor_profesorId_fkey" FOREIGN KEY ("profesorId") REFERENCES "Profesor"("id") ON DELETE CASCADE ON UPDATE CASCADE
+    );
+  `)
+  await prisma.$executeRawUnsafe(
+    `CREATE UNIQUE INDEX IF NOT EXISTS "CodigoInvitacionProfesor_profesorId_key" ON "CodigoInvitacionProfesor"("profesorId");`
+  )
+  await prisma.$executeRawUnsafe(
+    `CREATE UNIQUE INDEX IF NOT EXISTS "CodigoInvitacionProfesor_codigo_key" ON "CodigoInvitacionProfesor"("codigo");`
+  )
+
   profesorTablesReady = true
+}
+
+export function generarCodigoProfesor(nombreProfesor: string): string {
+  const prefijo =
+    nombreProfesor
+      .replace(/\b(prof\.?|profesor|profesora|lic\.?|ing\.?)\b/gi, '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^A-Za-z]/g, '')
+      .toUpperCase()
+      .slice(0, 4)
+      .padEnd(4, 'P') || 'PROF'
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+  let sufijo = ''
+  for (let i = 0; i < 4; i++) {
+    sufijo += chars[Math.floor(Math.random() * chars.length)]
+  }
+  return `${prefijo}-${sufijo}`
+}
+
+export async function ensureProfesorInviteCode(profesor: { id: string; nombre: string }) {
+  await ensureProfesorTables()
+  const existing = await prisma.codigoInvitacionProfesor.findUnique({
+    where: { profesorId: profesor.id }
+  })
+  if (existing) return existing
+
+  let codigo = generarCodigoProfesor(profesor.nombre)
+  for (let i = 0; i < 5; i++) {
+    const clash = await prisma.codigoInvitacionProfesor.findUnique({ where: { codigo } })
+    if (!clash) break
+    codigo = generarCodigoProfesor(profesor.nombre)
+  }
+
+  return await prisma.codigoInvitacionProfesor.create({
+    data: {
+      profesorId: profesor.id,
+      codigo,
+      mensajeBienvenida: `Te invito a unirte a Mi Profe de Mate para trabajar juntos con apoyo y seguimiento personalizado.`
+    }
+  })
 }
 
 /**

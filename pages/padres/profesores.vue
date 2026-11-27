@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { GraduationCap, KeyRound, Copy, RefreshCw, Trash2, CheckCircle2 } from 'lucide-vue-next'
+import { GraduationCap, KeyRound, Copy, RefreshCw, Trash2, CheckCircle2, Link2 } from 'lucide-vue-next'
 
 definePageMeta({ layout: 'padres' })
 
+const route = useRoute()
 const { alumnoActivo } = useSession()
 const selectedAlumnoId = ref(alumnoActivo.value?.id || '')
 
@@ -14,6 +15,34 @@ watch(selectedAlumnoId, () => refresh())
 const generating = ref(false)
 const copied = ref(false)
 const msg = ref('')
+const err = ref('')
+
+// Unirse usando código enviado por un profesor
+const codigoProfesorInput = ref(route.query.profe ? String(route.query.profe).trim().toUpperCase() : '')
+const joining = ref(false)
+
+const unirseAProfesor = async () => {
+  if (!codigoProfesorInput.value.trim() || joining.value) return
+  msg.value = ''
+  err.value = ''
+  joining.value = true
+  try {
+    const res = await $fetch<{ profesor: { nombre: string }; alumnoNombre: string }>('/api/padres/profesores/unirse', {
+      method: 'POST',
+      body: {
+        alumnoId: data.value?.alumno?.id,
+        codigoProfesor: codigoProfesorInput.value.trim()
+      }
+    })
+    codigoProfesorInput.value = ''
+    msg.value = `¡Listo! ${res.alumnoNombre} quedó vinculado con ${res.profesor.nombre}.`
+    await refresh()
+  } catch (e: any) {
+    err.value = e?.data?.statusMessage || 'No pudimos vincular con ese código de profesor.'
+  } finally {
+    joining.value = false
+  }
+}
 
 const generarCodigo = async () => {
   msg.value = ''
@@ -65,7 +94,39 @@ const desvincular = async (vinculoId: string) => {
       <CheckCircle2 class="w-4 h-4 shrink-0" /> <span>{{ msg }}</span>
     </div>
 
-    <!-- Tarjeta de código de vinculación -->
+    <div v-if="err" class="rounded-xl bg-rose-50 border border-rose-200 p-3 text-xs font-bold text-rose-700">
+      {{ err }}
+    </div>
+
+    <!-- Opción A: Unirse con código que envió el profesor -->
+    <section class="card-surface border-emerald-200 bg-emerald-50/40 space-y-3.5">
+      <div class="flex items-start gap-3">
+        <div class="w-11 h-11 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shrink-0">
+          <Link2 class="w-5 h-5" />
+        </div>
+        <div>
+          <h2 class="text-base font-extrabold text-slate-900">¿El profesor te envió su código de tutoría o clase?</h2>
+          <p class="text-xs text-slate-600 mt-0.5">
+            Pega aquí el código del docente (ej. <strong>ELEN-4X9K</strong>) para vincular a <strong>{{ data?.alumno?.nombre }}</strong> en 1 clic.
+          </p>
+        </div>
+      </div>
+
+      <form class="flex flex-col sm:flex-row gap-2.5" @submit.prevent="unirseAProfesor">
+        <input
+          v-model="codigoProfesorInput"
+          type="text"
+          maxlength="20"
+          placeholder="Código del profesor (ej. ELEN-4X9K)"
+          class="input-field bg-white uppercase font-extrabold tracking-wider flex-1"
+        />
+        <button type="submit" class="btn-success shrink-0" :disabled="joining || !codigoProfesorInput.trim()">
+          {{ joining ? 'Vinculando...' : 'Unirse al profesor' }}
+        </button>
+      </form>
+    </section>
+
+    <!-- Opción B: Generar código del estudiante para pasárselo al profesor -->
     <section class="card-surface border-indigo-200 bg-indigo-50/40 space-y-4">
       <div class="flex items-start gap-3">
         <div class="w-11 h-11 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shrink-0">
