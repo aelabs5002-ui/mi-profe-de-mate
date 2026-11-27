@@ -48,6 +48,8 @@ model Alumno {
   competencias           CompetenciaCCA[]
   erroresFrecuentes      ErrorFrecuenteCCA[]
   sesionesJuego          SesionJuego[]
+  codigoVinculacion      CodigoVinculacionAlumno?
+  vinculosProfesor       VinculoProfesor[]
 }
 
 model DocumentoBiblioteca {
@@ -209,4 +211,39 @@ model FeedbackPrueba {
 
   @@index([creadoEn])
   @@index([categoria])
+}
+
+model Profesor {
+  id           String            @id @default(cuid())
+  nombre       String
+  correo       String            @unique
+  passwordHash String
+  pais         String            @default("Venezuela")
+  institucion  String            @default("")
+  creadoEn     DateTime          @default(now())
+  ultimoAcceso DateTime?
+  vinculos     VinculoProfesor[]
+}
+
+model CodigoVinculacionAlumno {
+  id       String   @id @default(cuid())
+  alumnoId String   @unique
+  codigo   String   @unique
+  creadoEn DateTime @default(now())
+  alumno   Alumno   @relation(fields: [alumnoId], references: [id], onDelete: Cascade)
+}
+
+model VinculoProfesor {
+  id             String   @id @default(cuid())
+  profesorId     String
+  alumnoId       String
+  codigoUsado    String   @default("")
+  notaPedagogica String   @default("")
+  activo         Boolean  @default(true)
+  creadoEn       DateTime @default(now())
+  profesor       Profesor @relation(fields: [profesorId], references: [id], onDelete: Cascade)
+  alumno         Alumno   @relation(fields: [alumnoId], references: [id], onDelete: Cascade)
+
+  @@unique([profesorId, alumnoId])
+  @@index([alumnoId, activo])
 }

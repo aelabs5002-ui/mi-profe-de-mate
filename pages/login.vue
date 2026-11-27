@@ -144,6 +144,23 @@ const entrarDemo = async () => {
         </div>
       </div>
 
+      <!-- Acceso Portal Profesor -->
+      <NuxtLink
+        to="/profesor/login"
+        class="card-surface p-4 border-indigo-200 hover:border-indigo-400 bg-indigo-50/50 transition flex items-center justify-between gap-3"
+      >
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center text-lg shrink-0">
+            👩‍🏫
+          </div>
+          <div>
+            <div class="font-display font-extrabold text-sm text-slate-900">¿Eres profesor de matemáticas?</div>
+            <div class="text-xs text-slate-600">Entra al Portal Docente para monitorear y asignar misiones</div>
+          </div>
+        </div>
+        <ArrowRight class="w-4 h-4 text-indigo-600 shrink-0" />
+      </NuxtLink>
+
       <p class="text-center text-xs text-slate-500">
         🧠 Constitución Pedagógica: el error es útil y parte del aprendizaje.
       </p>

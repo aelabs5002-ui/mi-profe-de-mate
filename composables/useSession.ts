@@ -11,6 +11,7 @@ export interface AlumnoProfile {
   limiteMinutosDiario: number
   minutosUsadosHoy: number
   maxPistasPorPaso: number
+  vozPermitida?: boolean
   instruccionesPadre: string
 }
 

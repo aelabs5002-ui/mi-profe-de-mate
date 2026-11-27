@@ -1,6 +1,7 @@
 import { prisma } from './prisma'
 import { BANCO_EJERCICIOS, getCompetenciaForTopic } from './curriculum'
 import { generateAdaptiveExercisesWithGemini } from './ai'
+import { getNotasProfesoresActivos } from './profesorTables'
 
 export function todayKey(): string {
   return new Date().toISOString().slice(0, 10)
@@ -57,7 +58,8 @@ export function checkParentalAccess(alumno: {
 export async function crearMisionAdaptativa(params: {
   alumnoId: string
   temaForzado?: string
-  origen?: 'practica_ia' | 'refuerzo_cca' | 'tarea'
+  origen?: 'practica_ia' | 'refuerzo_cca' | 'tarea' | 'profesor'
+  dificultadForzada?: number
   tareaSubidaId?: string
   ejerciciosPersonalizados?: Array<{
     enunciado: string
@@ -67,6 +69,7 @@ export async function crearMisionAdaptativa(params: {
   }>
   tituloPersonalizado?: string
   descripcionPersonalizada?: string
+  profesorNombre?: string
 }) {
   const alumno = await prisma.alumno.findUnique({
     where: { id: params.alumnoId },
@@ -94,14 +97,18 @@ export async function crearMisionAdaptativa(params: {
         alumnoId: alumno.id,
         tareaSubidaId: params.tareaSubidaId || null,
         fechaClave,
-        origen: 'tarea',
+        origen: params.origen === 'profesor' ? 'profesor' : 'tarea',
         motorId: comp.motorRecomendado,
         titulo: params.tituloPersonalizado || `Misión desde tu Tarea: ${tema}`,
         descripcion: params.descripcionPersonalizada || 'Resolveremos tu tarea paso a paso con guía socrática.',
         tema,
-        dificultad: 2,
+        dificultad: params.dificultadForzada || 2,
         estado: 'en_progreso',
-        contextoJson: JSON.stringify({ fuente: 'tarea_vision', bibliotecaActiva: alumno.documentosBiblioteca.length }),
+        contextoJson: JSON.stringify({
+          fuente: params.origen === 'profesor' ? 'profesor_tarea' : 'tarea_vision',
+          profesorNombre: params.profesorNombre || null,
+          bibliotecaActiva: alumno.documentosBiblioteca.length
+        }),
         pasos: {
           create: params.ejerciciosPersonalizados.map((ej, idx) => ({
             orden: idx + 1,
@@ -119,8 +126,9 @@ export async function crearMisionAdaptativa(params: {
 
   // Decidir tema y origen según Leyes del MMCG
   let temaSeleccionado = params.temaForzado?.trim() || ''
-  let origen: 'practica_ia' | 'refuerzo_cca' = params.origen === 'refuerzo_cca' ? 'refuerzo_cca' : 'practica_ia'
-  let razonMmcg = 'Práctica adaptativa según tu nivel actual'
+  let origen: 'practica_ia' | 'refuerzo_cca' | 'profesor' =
+    params.origen === 'profesor' ? 'profesor' : params.origen === 'refuerzo_cca' ? 'refuerzo_cca' : 'practica_ia'
+  let razonMmcg = params.descripcionPersonalizada || 'Práctica adaptativa según tu nivel actual'
 
   // Prioridad 1 (PARENT_LIBRARY_FIRST): si el padre cargó un currículo/guía activo, priorizarlo si no hay refuerzo crítico
   if (!temaSeleccionado && alumno.documentosBiblioteca.length > 0) {
@@ -151,9 +159,9 @@ export async function crearMisionAdaptativa(params: {
   const temaEfectivo = temaSeleccionado || compMeta.tema
   const compActual = alumno.competencias.find((c) => c.codigo === compMeta.codigo)
 
-  // Dificultad adaptativa basada en dominio CCA
-  let dificultad = 2
-  if (compActual) {
+  // Dificultad adaptativa basada en dominio CCA (o forzada por profesor)
+  let dificultad = params.dificultadForzada || 2
+  if (!params.dificultadForzada && compActual) {
     if (compActual.nivelDominio >= 85) dificultad = 3
     else if (compActual.nivelDominio < 50) dificultad = 1
   }
@@ -170,6 +178,8 @@ export async function crearMisionAdaptativa(params: {
   const bibliotecaResumen = alumno.documentosBiblioteca
     .map((d) => `${d.titulo}: ${d.resumenExtraido}`)
     .join(' | ')
+  const notasProfesores = await getNotasProfesoresActivos(alumno.id)
+  const instruccionesCombinadas = [alumno.instruccionesPadre, notasProfesores].filter(Boolean).join(' | ')
 
   // Intentar generar ejercicios adaptados a la edad/grado/país/currículo con Gemini
   const generadosIa = await generateAdaptiveExercisesWithGemini({
@@ -179,7 +189,7 @@ export async function crearMisionAdaptativa(params: {
     dificultad,
     cantidad: 4,
     bibliotecaResumen: bibliotecaResumen || undefined,
-    instruccionesPadre: alumno.instruccionesPadre || undefined,
+    instruccionesPadre: instruccionesCombinadas || undefined,
     erroresRecientes: alumno.erroresFrecuentes.map((e) => `${e.tema} (${e.errorTag})`),
     ejerciciosEvitar
   })
@@ -231,9 +241,12 @@ export async function crearMisionAdaptativa(params: {
       origen,
       motorId: compMeta.motorRecomendado,
       titulo:
-        origen === 'refuerzo_cca'
-          ? `Refuerzo Inteligente: ${temaEfectivo}`
-          : `Misión del Día: ${temaEfectivo}`,
+        params.tituloPersonalizado ||
+        (origen === 'profesor'
+          ? `Misión de tu Profe${params.profesorNombre ? ` ${params.profesorNombre}` : ''}: ${temaEfectivo}`
+          : origen === 'refuerzo_cca'
+            ? `Refuerzo Inteligente: ${temaEfectivo}`
+            : `Misión del Día: ${temaEfectivo}`),
       descripcion: razonMmcg,
       tema: fuenteEjercicios === 'gemini_adaptativo' ? temaEfectivo : compMeta.tema,
       dificultad,

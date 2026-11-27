@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BarChart3, BookOpen, SlidersHorizontal, ArrowLeft, LogOut, Lock } from 'lucide-vue-next'
+import { BarChart3, BookOpen, SlidersHorizontal, GraduationCap, ArrowLeft, LogOut, Lock } from 'lucide-vue-next'
 
 const route = useRoute()
 const { padre, padresDesbloqueado, logout } = useSession()
@@ -11,6 +11,7 @@ const checking = ref(false)
 const navItems = [
   { to: '/padres', label: 'Resumen Semanal', icon: BarChart3 },
   { to: '/padres/biblioteca', label: 'Biblioteca Tutor', icon: BookOpen },
+  { to: '/padres/profesores', label: 'Profesores', icon: GraduationCap },
   { to: '/padres/controles', label: 'Controles y Familia', icon: SlidersHorizontal }
 ]
 

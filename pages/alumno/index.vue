@@ -60,7 +60,13 @@ const empezarMision = async (tema?: string) => {
       <div class="flex items-center justify-between gap-2 flex-wrap">
         <span class="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1 text-xs font-extrabold tracking-wide">
           <Sparkles class="w-3.5 h-3.5" />
-          {{ data?.misionActiva?.origen === 'tarea' ? 'MISIÓN DE TU TAREA' : 'MISIÓN ADAPTATIVA DEL DÍA' }}
+          {{
+            data?.misionActiva?.origen === 'profesor'
+              ? '👩‍🏫 MISIÓN DE TU PROFESOR'
+              : data?.misionActiva?.origen === 'tarea'
+                ? 'MISIÓN DE TU TAREA'
+                : 'MISIÓN ADAPTATIVA DEL DÍA'
+          }}
         </span>
         <span v-if="data?.parental?.permitido" class="text-xs font-semibold text-blue-100">
           ⏱️ {{ data.parental.minutosRestantes }} min disponibles hoy

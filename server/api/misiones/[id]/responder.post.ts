@@ -4,6 +4,7 @@ import { requireAlumnoActivo } from '~/server/utils/auth'
 import { evaluateMathAnswer } from '~/server/utils/curriculum'
 import { generateSocraticFeedback } from '~/server/utils/ai'
 import { actualizarCcaYSecc } from '~/server/utils/mmcg'
+import { getNotasProfesoresActivos } from '~/server/utils/profesorTables'
 
 const schema = z.object({
   pasoId: z.string().min(1),
@@ -44,6 +45,8 @@ export default defineEventHandler(async (event) => {
     take: 2
   })
   const bibliotecaResumen = docsActivos.map((d) => `${d.titulo}: ${d.resumenExtraido}`).join(' | ')
+  const notasProfesores = await getNotasProfesoresActivos(alumno.id)
+  const instruccionesCombinadas = [alumno.instruccionesPadre, notasProfesores].filter(Boolean).join(' | ')
 
   const ai = await generateSocraticFeedback({
     alumnoNombre: alumno.nombre,
@@ -57,7 +60,7 @@ export default defineEventHandler(async (event) => {
     intentoNumero,
     pistasDisponibles: pistas,
     pistasUsadas: paso.pistasUsadas,
-    instruccionesPadre: alumno.instruccionesPadre,
+    instruccionesPadre: instruccionesCombinadas,
     bibliotecaResumen
   })
 

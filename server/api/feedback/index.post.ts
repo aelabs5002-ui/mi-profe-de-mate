@@ -1,10 +1,11 @@
 import { z } from 'zod'
 import { prisma } from '~/server/utils/prisma'
 import { getSessionContext } from '~/server/utils/auth'
+import { getProfesorContext } from '~/server/utils/profesorAuth'
 import { ensureFeedbackTable } from '~/server/utils/feedbackTable'
 
 const schema = z.object({
-  autorTipo: z.enum(['padre', 'alumno', 'visitante']).default('padre'),
+  autorTipo: z.enum(['padre', 'alumno', 'profesor', 'visitante']).default('padre'),
   categoria: z.enum(['sugerencia', 'error', 'dificultad', 'me_gusto']).default('sugerencia'),
   calificacion: z.number().int().min(1).max(5).nullable().optional(),
   mensaje: z.string().trim().min(3, 'Escribe al menos unas palabras para poder entender tu comentario.').max(1500),
@@ -22,18 +23,22 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  const { padre, alumnoActivo } = await getSessionContext(event).catch(() => ({
-    padre: null,
-    alumnoActivo: null
-  }))
+  const [{ padre, alumnoActivo }, profesor] = await Promise.all([
+    getSessionContext(event).catch(() => ({ padre: null, alumnoActivo: null })),
+    getProfesorContext(event).catch(() => null)
+  ])
 
   const d = parsed.data
   const autorNombre =
-    d.autorTipo === 'alumno' && alumnoActivo
-      ? `${alumnoActivo.nombre} (${alumnoActivo.grado})`
-      : padre
-        ? `${padre.nombre} (${padre.pais})`
-        : 'Visitante'
+    d.autorTipo === 'profesor' && profesor
+      ? `Profe ${profesor.nombre}${profesor.institucion ? ` (${profesor.institucion})` : ''}`
+      : d.autorTipo === 'alumno' && alumnoActivo
+        ? `${alumnoActivo.nombre} (${alumnoActivo.grado})`
+        : padre
+          ? `${padre.nombre} (${padre.pais})`
+          : profesor
+            ? `Profe ${profesor.nombre}`
+            : 'Visitante'
 
   await ensureFeedbackTable()
 
@@ -42,7 +47,7 @@ export default defineEventHandler(async (event) => {
       padreId: padre?.id || null,
       alumnoId: alumnoActivo?.id || null,
       autorNombre,
-      autorTipo: padre ? d.autorTipo : 'visitante',
+      autorTipo: d.autorTipo === 'profesor' && profesor ? 'profesor' : padre ? d.autorTipo : profesor ? 'profesor' : 'visitante',
       categoria: d.categoria,
       calificacion: d.calificacion ?? null,
       mensaje: d.mensaje,

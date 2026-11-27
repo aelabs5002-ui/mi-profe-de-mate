@@ -8,13 +8,17 @@ const sending = ref(false)
 const sent = ref(false)
 const err = ref('')
 
-const autorTipo = ref<'alumno' | 'padre'>('alumno')
+const autorTipo = ref<'alumno' | 'padre' | 'profesor'>('alumno')
 const categoria = ref<'sugerencia' | 'error' | 'dificultad' | 'me_gusto'>('sugerencia')
 const calificacion = ref<number | null>(5)
 const mensaje = ref('')
 
 const abrir = () => {
-  autorTipo.value = route.path.startsWith('/padres') ? 'padre' : 'alumno'
+  autorTipo.value = route.path.startsWith('/profesor')
+    ? 'profesor'
+    : route.path.startsWith('/padres')
+      ? 'padre'
+      : 'alumno'
   err.value = ''
   sent.value = false
   open.value = true
@@ -123,22 +127,30 @@ const enviar = async () => {
 
           <form v-else class="space-y-3.5" @submit.prevent="enviar">
             <!-- ¿Quién escribe? -->
-            <div class="grid grid-cols-2 gap-2">
+            <div class="grid grid-cols-3 gap-1.5">
               <button
                 type="button"
-                class="py-2 px-3 rounded-xl border-2 text-xs font-extrabold transition"
+                class="py-2 px-2 rounded-xl border-2 text-[11px] font-extrabold transition"
                 :class="autorTipo === 'alumno' ? 'border-[#2563EB] bg-blue-50 text-[#1D4ED8]' : 'border-slate-200 text-slate-600'"
                 @click="autorTipo = 'alumno'"
               >
-                👧 Soy estudiante
+                👧 Alumno
               </button>
               <button
                 type="button"
-                class="py-2 px-3 rounded-xl border-2 text-xs font-extrabold transition"
+                class="py-2 px-2 rounded-xl border-2 text-[11px] font-extrabold transition"
                 :class="autorTipo === 'padre' ? 'border-[#2563EB] bg-blue-50 text-[#1D4ED8]' : 'border-slate-200 text-slate-600'"
                 @click="autorTipo = 'padre'"
               >
-                👨‍👩‍👧 Soy padre / madre
+                👨‍👩‍👧 Padre
+              </button>
+              <button
+                type="button"
+                class="py-2 px-2 rounded-xl border-2 text-[11px] font-extrabold transition"
+                :class="autorTipo === 'profesor' ? 'border-indigo-600 bg-indigo-50 text-indigo-700' : 'border-slate-200 text-slate-600'"
+                @click="autorTipo = 'profesor'"
+              >
+                👩‍🏫 Profesor
               </button>
             </div>
 

@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { prisma } from '~/server/utils/prisma'
 import { requireAlumnoActivo } from '~/server/utils/auth'
 import { answerStudentQuestionSocratically } from '~/server/utils/ai'
+import { getNotasProfesoresActivos } from '~/server/utils/profesorTables'
 
 const schema = z.object({
   pasoId: z.string().min(1),
@@ -33,6 +34,8 @@ export default defineEventHandler(async (event) => {
     take: 2
   })
   const bibliotecaResumen = docsActivos.map((d) => `${d.titulo}: ${d.resumenExtraido}`).join(' | ')
+  const notasProfesores = await getNotasProfesoresActivos(alumno.id)
+  const instruccionesCombinadas = [alumno.instruccionesPadre, notasProfesores].filter(Boolean).join(' | ')
 
   const res = await answerStudentQuestionSocratically({
     alumnoNombre: alumno.nombre,
@@ -43,7 +46,7 @@ export default defineEventHandler(async (event) => {
     respuestaEsperada: paso.respuestaEsperada,
     pregunta: parsed.data.pregunta,
     bibliotecaResumen,
-    instruccionesPadre: alumno.instruccionesPadre
+    instruccionesPadre: instruccionesCombinadas
   })
 
   return {
