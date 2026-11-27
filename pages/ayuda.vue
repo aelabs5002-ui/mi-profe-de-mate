@@ -134,7 +134,7 @@ const volver = () => {
             </li>
             <li class="rounded-xl bg-white border border-blue-100 p-3 flex items-start gap-2">
               <CheckCircle2 class="w-4 h-4 text-[#2563EB] shrink-0 mt-0.5" />
-              <span><strong>Respaldo en PDF:</strong> descarga reportes semanales claros y los Certificados SECC que tu hijo/a vaya logrando.</span>
+              <span><strong>Respaldo en PDF y Certificados SECC (evidencia de logros y competencias del alumno):</strong> descarga reportes semanales y certificados que demuestran los dominios logrados sin ayuda, ideales para portafolio escolar o educación en casa (<em>homeschooling</em>).</span>
             </li>
             <li class="rounded-xl bg-white border border-blue-100 p-3 flex items-start gap-2">
               <CheckCircle2 class="w-4 h-4 text-[#2563EB] shrink-0 mt-0.5" />
@@ -206,7 +206,7 @@ const volver = () => {
             </li>
             <li class="rounded-xl bg-white border border-emerald-100 p-3 flex items-start gap-2">
               <CheckCircle2 class="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-              <span><strong>Ganar Certificados Oficiales SECC:</strong> demuestra que dominas cada tema (90%+ sin pistas) y descarga tu diploma en PDF.</span>
+              <span><strong>Ganar Certificados SECC (evidencia de logros y competencias del alumno):</strong> demuestra que dominas cada tema sin ayuda (90%+ en 3 sesiones sin pistas) y descarga tu certificado en PDF.</span>
             </li>
           </ul>
         </div>
@@ -242,7 +242,7 @@ const volver = () => {
           <div class="text-xs font-extrabold text-emerald-600 uppercase">🎮 5 Juegos y Certificados SECC</div>
           <h2 class="text-base font-extrabold text-slate-900">Juega y desbloquea certificados PDF</h2>
           <p class="text-sm text-slate-600 leading-relaxed">
-            En <strong>Juegos</strong> tienes 5 motores activos (<em>Disparo Numérico, Memory Matemático, Puzzle Lógico, Constructor de Expresiones y Secuencias y Patrones</em>). En <strong>Progreso</strong> verás tu Carta Cognitiva y podrás descargar tu <strong>Certificado SECC en PDF</strong> al lograr 90%+ en 3 sesiones sin pistas.
+            En <strong>Juegos</strong> tienes 5 motores activos (<em>Disparo Numérico, Memory Matemático, Puzzle Lógico, Constructor de Expresiones y Secuencias y Patrones</em>). En <strong>Progreso</strong> verás tu Carta Cognitiva y podrás descargar tus <strong>Certificados SECC (evidencia de logros y competencias del alumno)</strong> en PDF al lograr 90%+ en 3 sesiones sin pistas.
           </p>
         </div>
       </section>
@@ -311,6 +311,12 @@ const volver = () => {
 
       <!-- TAB FAQ -->
       <section v-else class="space-y-4">
+        <div class="card-surface space-y-1.5 border-emerald-200 bg-emerald-50/40">
+          <h2 class="text-sm font-extrabold text-slate-900">¿Qué son los Certificados SECC?</h2>
+          <p class="text-sm text-slate-600 leading-relaxed">
+            <strong>SECC (Evidencia de Logros y Competencias del Alumno)</strong> es un certificado descargable en PDF que sirve para <strong>demostrar los dominios reales logrados por el estudiante</strong> de forma independiente (requiere 90%+ en 3 sesiones de dificultad media o superior sin usar pistas). Es especialmente útil como constancia de aprendizaje para <strong>padres que educan en casa (homeschooling)</strong>, portafolios escolares y seguimiento docente.
+          </p>
+        </div>
         <div class="card-surface space-y-1.5">
           <h2 class="text-sm font-extrabold text-slate-900">¿La IA le hace la tarea al estudiante?</h2>
           <p class="text-sm text-slate-600">

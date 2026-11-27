@@ -12,7 +12,7 @@ const { data } = await useFetch<any>('/api/cca')
       <span class="text-xs font-extrabold uppercase tracking-wider text-[#2563EB]">Carta Cognitiva del Alumno (CCA)</span>
       <h1 class="text-2xl font-extrabold text-slate-900 mt-0.5">Mi Progreso y Certificados SECC</h1>
       <p class="text-sm text-slate-600 mt-1">
-        Cada competencia se certifica automáticamente al lograr <strong>90%+ en 3 sesiones</strong> de dificultad media o superior sin usar pistas.
+        <strong>SECC (evidencia de logros y competencias del alumno)</strong> sirve para demostrar los dominios reales logrados sin ayuda — ideal para portafolio escolar y educación en casa. Cada competencia se certifica en PDF al lograr <strong>90%+ en 3 sesiones</strong> de dificultad media o superior sin pistas.
       </p>
     </div>
 
