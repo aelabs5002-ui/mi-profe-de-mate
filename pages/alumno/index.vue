@@ -147,12 +147,31 @@ const empezarMision = async (tema?: string) => {
       </NuxtLink>
     </section>
 
-    <!-- Elegir tema rápido -->
-    <section class="card-surface space-y-3">
+    <!-- Elegir tema rápido (priorizando currículo cargado por los padres) -->
+    <section class="card-surface space-y-3.5">
       <div class="flex items-center justify-between">
         <h2 class="text-base font-extrabold text-slate-900">Practicar un tema específico</h2>
         <span class="text-xs text-slate-500">4 retos guiados</span>
       </div>
+
+      <div v-if="(data?.temasBiblioteca || []).length > 0" class="space-y-2">
+        <div class="text-[11px] font-extrabold uppercase tracking-wider text-[#2563EB]">
+          📚 De tu currículo escolar (Biblioteca Padres)
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <button
+            v-for="tb in data.temasBiblioteca"
+            :key="tb"
+            type="button"
+            class="px-3.5 py-2 rounded-xl bg-blue-50 hover:bg-[#2563EB] border border-blue-200 hover:border-[#2563EB] text-xs font-extrabold text-[#1D4ED8] hover:text-white transition"
+            :disabled="creando || (data?.parental && !data.parental.permitido)"
+            @click="empezarMision(tb)"
+          >
+            📚 {{ tb }}
+          </button>
+        </div>
+      </div>
+
       <div class="flex flex-wrap gap-2">
         <button
           v-for="t in catalogo?.temas || []"

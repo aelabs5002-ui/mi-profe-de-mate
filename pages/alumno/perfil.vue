@@ -90,9 +90,10 @@ const guardarPerfil = async () => {
           </div>
           <div>
             <label class="block text-xs font-bold text-slate-700 mb-1">Grado escolar</label>
-            <select v-model="form.grado" class="input-field">
-              <option v-for="g in grados" :key="g" :value="g">{{ g }}</option>
-            </select>
+            <div class="input-field bg-slate-50 text-slate-600 font-semibold">
+              {{ alumnoActivo?.grado }}
+            </div>
+            <p class="text-[11px] text-slate-400 mt-1">Se configura desde el Portal Padres (con PIN).</p>
           </div>
         </div>
 

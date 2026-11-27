@@ -49,11 +49,30 @@ export default defineEventHandler(async (event) => {
     take: 3
   })
 
+  const docsActivos = await prisma.documentoBiblioteca.findMany({
+    where: { alumnoId: alumno.id, activo: true },
+    orderBy: { prioridad: 'asc' },
+    take: 5
+  })
+  const temasBiblioteca = Array.from(
+    new Set(
+      docsActivos.flatMap((d) => {
+        try {
+          const parsed = JSON.parse(d.temasJson || '[]')
+          return Array.isArray(parsed) ? parsed.map((t: any) => String(t).trim()).filter(Boolean) : []
+        } catch {
+          return []
+        }
+      })
+    )
+  ).slice(0, 12)
+
   return {
     alumno,
     parental,
     misionActiva,
     misionesRecientes,
-    erroresFrecuentes
+    erroresFrecuentes,
+    temasBiblioteca
   }
 })

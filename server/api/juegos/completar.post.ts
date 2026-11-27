@@ -4,7 +4,7 @@ import { requireAlumnoActivo } from '~/server/utils/auth'
 import { actualizarCcaYSecc } from '~/server/utils/mmcg'
 
 const schema = z.object({
-  motorId: z.enum(['A', 'C', 'F']),
+  motorId: z.enum(['A', 'C', 'D', 'F', 'H']),
   tema: z.string().trim().min(2),
   dificultad: z.number().int().min(1).max(5).default(2),
   aciertos: z.number().int().min(0),

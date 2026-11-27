@@ -132,12 +132,12 @@ export const AVATARES_ALUMNO = ['🦊', '🦁', '🦉', '🐼', '🚀', '⚡', '
 export const CATALOGO_MOTORES = [
   { id: 'A', nombre: 'Disparo Numérico', foco: 'Cálculo mental, múltiplos y primos', disponible: true, color: 'blue' },
   { id: 'C', nombre: 'Memory Matemático', foco: 'Equivalencias (1/2 = 0.5 = 50%)', disponible: true, color: 'emerald' },
+  { id: 'D', nombre: 'Puzzle Lógico', foco: 'Operaciones encadenadas paso a paso', disponible: true, color: 'cyan' },
   { id: 'F', nombre: 'Constructor de Expresiones', foco: 'Fórmulas, despeje y ecuaciones', disponible: true, color: 'violet' },
+  { id: 'H', nombre: 'Secuencias y Patrones', foco: 'Series numéricas y razonamiento lógico', disponible: true, color: 'indigo' },
   { id: 'B', nombre: 'Plataformas de Fracciones', foco: 'Fracciones y visualización espacial', disponible: false, color: 'amber' },
-  { id: 'D', nombre: 'Puzzle Lógico', foco: 'Operaciones encadenadas y patrones', disponible: false, color: 'cyan' },
   { id: 'E', nombre: 'Carreras de Cálculo', foco: 'Velocidad de cálculo mental', disponible: false, color: 'orange' },
-  { id: 'G', nombre: 'Defensa de Problemas', foco: 'Comprensión lectora y problemas verbales', disponible: false, color: 'rose' },
-  { id: 'H', nombre: 'Secuencias y Patrones', foco: 'Series numéricas y razonamiento lógico', disponible: false, color: 'indigo' }
+  { id: 'G', nombre: 'Defensa de Problemas', foco: 'Comprensión lectora y problemas verbales', disponible: false, color: 'rose' }
 ] as const
 
 export const TEMAS_CURRICULARES = [

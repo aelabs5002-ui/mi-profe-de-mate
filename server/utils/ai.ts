@@ -286,6 +286,128 @@ Devuelve ÚNICAMENTE JSON válido con esta estructura exacta (sin markdown):
   }
 }
 
+export interface ExtractedCurriculum {
+  tituloSugerido: string
+  temas: string[]
+  resumenExtraido: string
+  usedGemini: boolean
+}
+
+export async function analyzeCurriculumDocumentWithGemini(params: {
+  fileName: string
+  mimeType: string
+  base64Data?: string
+  textoPlano?: string
+  tipoDoc: string
+  grado: string
+  pais: string
+}): Promise<ExtractedCurriculum> {
+  const prompt = `Analiza este documento educativo (${params.tipoDoc}) de matemáticas subido por un padre/representante para un estudiante de ${params.grado} (${params.pais}).
+Nombre del archivo: "${params.fileName}".
+${params.textoPlano ? `Texto del documento:\n"""\n${params.textoPlano.slice(0, 12000)}\n"""` : ''}
+
+Extrae el programa/temario real de matemáticas que contiene el documento para que un Tutor IA pueda generar ejercicios y explicar siguiendo este currículo.
+Devuelve ÚNICAMENTE JSON válido con esta estructura exacta (sin markdown):
+{
+  "tituloSugerido": "Título limpio del currículo o guía",
+  "temas": ["Tema 1", "Tema 2", "Tema 3"],
+  "resumenExtraido": "Resumen estructurado claro (máximo 1800 caracteres) con los objetivos, contenidos clave, orden sugerido y metodología o fórmulas que exige este material."
+}
+Reglas:
+- Extrae entre 3 y 10 temas concretos y cortos en "temas".
+- Si el documento incluye varias materias, enfócate SOLO en matemáticas.`
+
+  const parts: Array<Record<string, any>> = [{ text: prompt }]
+  if (params.base64Data && (params.mimeType.startsWith('image/') || params.mimeType === 'application/pdf')) {
+    parts.push({
+      inlineData: {
+        mimeType: params.mimeType,
+        data: params.base64Data
+      }
+    })
+  }
+
+  const raw = await callGemini(parts)
+  if (raw) {
+    try {
+      const cleaned = raw.replace(/^```json\s*/i, '').replace(/```$/, '').trim()
+      const parsed = JSON.parse(cleaned)
+      const temas = Array.isArray(parsed?.temas)
+        ? parsed.temas.map((t: any) => String(t).trim()).filter(Boolean).slice(0, 12)
+        : []
+      const resumen = String(parsed?.resumenExtraido || '').trim()
+      if (temas.length > 0 || resumen.length > 15) {
+        return {
+          tituloSugerido: String(parsed.tituloSugerido || params.fileName.replace(/\.[^.]+$/, '')).trim(),
+          temas: temas.length > 0 ? temas : ['Matemáticas del grado'],
+          resumenExtraido: resumen.slice(0, 2800) || `Material curricular cargado desde ${params.fileName}.`,
+          usedGemini: true
+        }
+      }
+    } catch {
+      // Fallback
+    }
+  }
+
+  const baseTitle = params.fileName.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ').trim() || 'Currículo escolar'
+  return {
+    tituloSugerido: baseTitle,
+    temas: ['Operaciones y Cálculo Mental', 'Fracciones Equivalentes', 'Ecuaciones Lineales'],
+    resumenExtraido: params.textoPlano
+      ? params.textoPlano.slice(0, 1200).trim()
+      : `Archivo "${params.fileName}" cargado. Agrega o edita aquí los temas y notas clave de tu currículo para que el Tutor IA los priorice.`,
+    usedGemini: false
+  }
+}
+
+export async function answerStudentQuestionSocratically(params: {
+  alumnoNombre: string
+  grado: string
+  pais: string
+  tema: string
+  enunciado: string
+  respuestaEsperada: string
+  pregunta: string
+  bibliotecaResumen?: string
+  instruccionesPadre?: string
+}): Promise<{ respuesta: string; usedGemini: boolean }> {
+  const system = `Eres "Mi Profe de Mate", un tutor de matemáticas cálido y paciente para estudiantes de 9 a 15 años.
+El alumno tiene una duda conceptual mientras intenta resolver un ejercicio.
+REGLAS ESTRICTAS:
+1. NUNCA reveles ni calcules la respuesta final exacta del ejercicio actual.
+2. Explica el concepto o palabra que preguntó con un ejemplo diferente muy sencillo si ayuda.
+3. Máximo 3 oraciones claras y cercanas, terminando con un pequeño ánimo para que vuelva a intentarlo.
+Devuelve ÚNICAMENTE JSON válido: { "respuesta": "..." }`
+
+  const payload = JSON.stringify({
+    alumno: params.alumnoNombre,
+    grado: params.grado,
+    pais: params.pais,
+    tema: params.tema,
+    ejercicioActual: params.enunciado,
+    respuestaFinalProhibidaDeDecir: params.respuestaEsperada,
+    preguntaDelAlumno: params.pregunta,
+    bibliotecaPrioritaria: params.bibliotecaResumen || null,
+    instruccionesPadre: params.instruccionesPadre || null
+  })
+
+  const raw = await callGemini([{ text: payload }], system)
+  if (raw) {
+    try {
+      const cleaned = raw.replace(/^```json\s*/i, '').replace(/```$/, '').trim()
+      const parsed = JSON.parse(cleaned)
+      if (parsed?.respuesta) {
+        return { respuesta: String(parsed.respuesta).trim(), usedGemini: true }
+      }
+    } catch {}
+  }
+
+  return {
+    respuesta: `¡Qué buena pregunta, ${params.alumnoNombre}! En ${params.tema}, lo mejor es ir paso a paso: identifica primero qué te pide el ejercicio y realiza una operación a la vez. Prueba escribir un intento y lo revisamos juntos.`,
+    usedGemini: false
+  }
+}
+
 export async function analyzeHomeworkWithGemini(params: {
   fileName: string
   mimeType: string

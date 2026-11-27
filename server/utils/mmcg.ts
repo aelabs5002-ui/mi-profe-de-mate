@@ -118,9 +118,24 @@ export async function crearMisionAdaptativa(params: {
   }
 
   // Decidir tema y origen según Leyes del MMCG
-  let temaSeleccionado = params.temaForzado || ''
+  let temaSeleccionado = params.temaForzado?.trim() || ''
   let origen: 'practica_ia' | 'refuerzo_cca' = params.origen === 'refuerzo_cca' ? 'refuerzo_cca' : 'practica_ia'
   let razonMmcg = 'Práctica adaptativa según tu nivel actual'
+
+  // Prioridad 1 (PARENT_LIBRARY_FIRST): si el padre cargó un currículo/guía activo, priorizarlo si no hay refuerzo crítico
+  if (!temaSeleccionado && alumno.documentosBiblioteca.length > 0) {
+    try {
+      const temasDoc = JSON.parse(alumno.documentosBiblioteca[0].temasJson)
+      if (Array.isArray(temasDoc) && temasDoc.length > 0) {
+        const idx = Math.floor(Math.random() * Math.min(temasDoc.length, 6))
+        const temaDoc = String(temasDoc[idx] || temasDoc[0]).trim()
+        if (temaDoc) {
+          temaSeleccionado = temaDoc
+          razonMmcg = `Prioridad Biblioteca Padres: ${alumno.documentosBiblioteca[0].titulo}`
+        }
+      }
+    } catch {}
+  }
 
   if (!temaSeleccionado && alumno.erroresFrecuentes.length > 0) {
     temaSeleccionado = alumno.erroresFrecuentes[0].tema
@@ -128,21 +143,12 @@ export async function crearMisionAdaptativa(params: {
     razonMmcg = `Refuerzo prioritario CCA (foco en ${alumno.erroresFrecuentes[0].errorTag.replace('_', ' ')})`
   }
 
-  if (!temaSeleccionado && alumno.documentosBiblioteca.length > 0) {
-    try {
-      const temasDoc = JSON.parse(alumno.documentosBiblioteca[0].temasJson)
-      if (Array.isArray(temasDoc) && temasDoc[0]) {
-        temaSeleccionado = getCompetenciaForTopic(String(temasDoc[0])).tema
-        razonMmcg = `Prioridad Biblioteca Padres: ${alumno.documentosBiblioteca[0].titulo}`
-      }
-    } catch {}
-  }
-
   if (!temaSeleccionado) {
     temaSeleccionado = 'Ecuaciones Lineales'
   }
 
   const compMeta = getCompetenciaForTopic(temaSeleccionado)
+  const temaEfectivo = temaSeleccionado || compMeta.tema
   const compActual = alumno.competencias.find((c) => c.codigo === compMeta.codigo)
 
   // Dificultad adaptativa basada en dominio CCA
@@ -165,11 +171,11 @@ export async function crearMisionAdaptativa(params: {
     .map((d) => `${d.titulo}: ${d.resumenExtraido}`)
     .join(' | ')
 
-  // Intentar generar ejercicios adaptados a la edad/grado/país con Gemini
+  // Intentar generar ejercicios adaptados a la edad/grado/país/currículo con Gemini
   const generadosIa = await generateAdaptiveExercisesWithGemini({
     grado: alumno.grado,
     pais: alumno.padre?.pais || 'Internacional',
-    tema: compMeta.tema,
+    tema: temaEfectivo,
     dificultad,
     cantidad: 4,
     bibliotecaResumen: bibliotecaResumen || undefined,
@@ -192,7 +198,7 @@ export async function crearMisionAdaptativa(params: {
     fuenteEjercicios = 'gemini_adaptativo'
     pasosData = generadosIa.map((ej, idx) => ({
       orden: idx + 1,
-      tema: ej.tema || compMeta.tema,
+      tema: ej.tema || temaEfectivo,
       enunciado: ej.enunciado,
       respuestaEsperada: ej.respuestaEsperada,
       pistasJson: JSON.stringify(ej.pistas),
@@ -226,10 +232,10 @@ export async function crearMisionAdaptativa(params: {
       motorId: compMeta.motorRecomendado,
       titulo:
         origen === 'refuerzo_cca'
-          ? `Refuerzo Inteligente: ${compMeta.tema}`
-          : `Misión del Día: ${compMeta.tema}`,
+          ? `Refuerzo Inteligente: ${temaEfectivo}`
+          : `Misión del Día: ${temaEfectivo}`,
       descripcion: razonMmcg,
-      tema: compMeta.tema,
+      tema: fuenteEjercicios === 'gemini_adaptativo' ? temaEfectivo : compMeta.tema,
       dificultad,
       estado: 'en_progreso',
       contextoJson: JSON.stringify({

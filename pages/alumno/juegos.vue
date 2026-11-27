@@ -8,11 +8,11 @@ const { data: catalogo } = await useFetch<{
   motores: Array<{ id: string; nombre: string; foco: string; disponible: boolean; color: string }>
 }>('/api/catalogo')
 
-const motorActivo = ref<'A' | 'C' | 'F'>('A')
+const motorActivo = ref<'A' | 'C' | 'D' | 'F' | 'H'>('A')
 const toast = ref('')
 
 const guardarResultadoJuego = async (payload: {
-  motorId: 'A' | 'C' | 'F'
+  motorId: 'A' | 'C' | 'D' | 'F' | 'H'
   tema: string
   dificultad: number
   aciertos: number
@@ -55,7 +55,7 @@ const guardarResultadoJuego = async (payload: {
     </div>
 
     <!-- Selector de motores disponibles -->
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
       <button
         v-for="m in (catalogo?.motores || []).filter((x) => x.disponible)"
         :key="m.id"
@@ -66,7 +66,7 @@ const guardarResultadoJuego = async (payload: {
             ? 'bg-blue-50/80 border-[#2563EB] shadow-sm'
             : 'bg-white border-slate-200 hover:border-slate-300'
         "
-        @click="motorActivo = m.id as 'A' | 'C' | 'F'; toast = ''"
+        @click="motorActivo = m.id as 'A' | 'C' | 'D' | 'F' | 'H'; toast = ''"
       >
         <div class="flex items-center justify-between">
           <span class="text-xs font-extrabold uppercase text-[#2563EB]">Motor {{ m.id }}</span>
@@ -80,7 +80,9 @@ const guardarResultadoJuego = async (payload: {
     <!-- Motor jugable activo -->
     <MotorDisparoNumerico v-if="motorActivo === 'A'" @finished="guardarResultadoJuego" />
     <MotorMemoryMatematico v-else-if="motorActivo === 'C'" @finished="guardarResultadoJuego" />
+    <MotorPuzzleLogico v-else-if="motorActivo === 'D'" @finished="guardarResultadoJuego" />
     <MotorConstructorExpresiones v-else-if="motorActivo === 'F'" @finished="guardarResultadoJuego" />
+    <MotorSecuenciasPatrones v-else-if="motorActivo === 'H'" @finished="guardarResultadoJuego" />
 
     <!-- Catálogo completo (Próximos motores B, D, E, G, H) -->
     <section class="card-surface space-y-3">

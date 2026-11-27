@@ -9,7 +9,7 @@ const createSchema = z.object({
   tipoDoc: z.enum(['curriculo', 'libro', 'guia', 'otro']).default('guia'),
   grado: z.string().trim().optional(),
   temas: z.array(z.string().trim()).default([]),
-  resumenExtraido: z.string().trim().max(1000).default(''),
+  resumenExtraido: z.string().trim().max(3000).default(''),
   prioridad: z.number().int().min(1).max(5).default(1)
 })
 

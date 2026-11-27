@@ -1,10 +1,24 @@
 <script setup lang="ts">
-import { Lightbulb, Send, ArrowRight, Trophy, Keyboard, Sparkles, CheckCircle2, BookOpen } from 'lucide-vue-next'
+import {
+  Lightbulb,
+  Send,
+  ArrowRight,
+  Trophy,
+  Keyboard,
+  Sparkles,
+  CheckCircle2,
+  BookOpen,
+  Volume2,
+  VolumeX,
+  Mic,
+  MicOff,
+  MessageCircleQuestion
+} from 'lucide-vue-next'
 
 definePageMeta({ layout: 'alumno' })
 
 const route = useRoute()
-const { fetchMe } = useSession()
+const { alumnoActivo, fetchMe } = useSession()
 
 const mision = ref<any>(null)
 const maxPistasPorPaso = ref(2)
@@ -17,6 +31,19 @@ const hintLoading = ref(false)
 const skipping = ref(false)
 const err = ref('')
 
+// Voz del tutor (Web Speech API)
+const vozPermitida = computed(() => alumnoActivo.value?.vozPermitida !== false)
+const hablando = ref(false)
+const escuchando = ref(false)
+const soportaDictado = ref(false)
+let recognitionInstance: any = null
+
+// Chat de dudas conceptuales
+const showDuda = ref(false)
+const dudaTexto = ref('')
+const dudaLoading = ref(false)
+const respuestaDuda = ref('')
+
 const feedbackActual = ref<{ esCorrecta: boolean; guiado?: boolean; mensaje: string } | null>(null)
 const pistasReveladas = ref<string[]>([])
 const resumenFinal = ref<any>(null)
@@ -28,6 +55,102 @@ const puedeVerExplicacion = computed(() => {
   const intentos = pasoActual.value.intentosCount || 0
   const pistas = pasoActual.value.pistasUsadas || 0
   return intentos >= 3 || (intentos >= 2 && pistas >= maxPistasPorPaso.value)
+})
+
+onMounted(() => {
+  if (import.meta.client) {
+    const w = window as any
+    soportaDictado.value = Boolean(w.SpeechRecognition || w.webkitSpeechRecognition)
+  }
+})
+
+const detenerVoz = () => {
+  if (import.meta.client && 'speechSynthesis' in window) {
+    window.speechSynthesis.cancel()
+  }
+  hablando.value = false
+}
+
+const leerEnVozAlta = (texto: string) => {
+  if (!import.meta.client || !('speechSynthesis' in window) || !vozPermitida.value) return
+  if (hablando.value) {
+    detenerVoz()
+    return
+  }
+  const limpio = texto.replace(/[🧠🎉✨🎯📘🧑‍🏫💡]/g, '').trim()
+  const utter = new SpeechSynthesisUtterance(limpio)
+  utter.lang = 'es-ES'
+  utter.rate = 0.96
+  utter.onstart = () => (hablando.value = true)
+  utter.onend = () => (hablando.value = false)
+  utter.onerror = () => (hablando.value = false)
+  window.speechSynthesis.cancel()
+  window.speechSynthesis.speak(utter)
+}
+
+const normalizarVozMatematica = (raw: string): string => {
+  const numMap: Record<string, string> = {
+    cero: '0',
+    uno: '1',
+    dos: '2',
+    tres: '3',
+    cuatro: '4',
+    cinco: '5',
+    seis: '6',
+    siete: '7',
+    ocho: '8',
+    nueve: '9',
+    diez: '10'
+  }
+  let s = raw.toLowerCase().trim()
+  s = s.replace(/\bmenos\s+/g, '-')
+  s = s.replace(/\bmás\s+/g, '+')
+  s = s.replace(/\bsobre\b|\bentre\b/g, '/')
+  s = s.replace(/\bcoma\b|\bpunto\b/g, '.')
+  s = s.replace(/\bequis\b/g, 'x')
+  s = s.replace(/\bigual a\b|\bigual\b/g, '=')
+  for (const [palabra, digito] of Object.entries(numMap)) {
+    s = s.replace(new RegExp(`\\b${palabra}\\b`, 'g'), digito)
+  }
+  return s.replace(/\s+/g, '')
+}
+
+const alternarDictado = () => {
+  if (!import.meta.client || !vozPermitida.value) return
+  const w = window as any
+  const SpeechRec = w.SpeechRecognition || w.webkitSpeechRecognition
+  if (!SpeechRec) return
+
+  if (escuchando.value && recognitionInstance) {
+    recognitionInstance.stop()
+    escuchando.value = false
+    return
+  }
+
+  const rec = new SpeechRec()
+  rec.lang = 'es-ES'
+  rec.interimResults = false
+  rec.maxAlternatives = 1
+  rec.onstart = () => (escuchando.value = true)
+  rec.onend = () => (escuchando.value = false)
+  rec.onerror = () => (escuchando.value = false)
+  rec.onresult = (ev: any) => {
+    const transcript = ev?.results?.[0]?.[0]?.transcript || ''
+    if (transcript) {
+      respuesta.value = normalizarVozMatematica(transcript)
+    }
+  }
+  recognitionInstance = rec
+  rec.start()
+}
+
+onBeforeUnmount(() => {
+  detenerVoz()
+  if (recognitionInstance) {
+    try {
+      recognitionInstance.stop()
+    } catch {}
+  }
 })
 
 const cargarMision = async () => {
@@ -146,7 +269,26 @@ const pedirPista = async () => {
   }
 }
 
+const enviarDuda = async () => {
+  if (!pasoActual.value || dudaTexto.value.trim().length < 3 || dudaLoading.value) return
+  err.value = ''
+  dudaLoading.value = true
+  try {
+    const res = await $fetch<{ respuesta: string }>(`/api/misiones/${mision.value.id}/duda`, {
+      method: 'POST',
+      body: { pasoId: pasoActual.value.id, pregunta: dudaTexto.value.trim() }
+    })
+    respuestaDuda.value = res.respuesta
+    dudaTexto.value = ''
+  } catch (e: any) {
+    err.value = e?.data?.statusMessage || 'No pudimos responder tu duda en este momento.'
+  } finally {
+    dudaLoading.value = false
+  }
+}
+
 const siguientePaso = () => {
+  detenerVoz()
   if (resumenPendiente.value) {
     resumenFinal.value = resumenPendiente.value
     resumenPendiente.value = null
@@ -157,6 +299,8 @@ const siguientePaso = () => {
     respuesta.value = ''
     feedbackActual.value = null
     pistasReveladas.value = []
+    respuestaDuda.value = ''
+    showDuda.value = false
     err.value = ''
   }
 }
@@ -248,9 +392,21 @@ const nuevaMision = async () => {
       <!-- Tarjeta del ejercicio -->
       <div class="card-surface space-y-5">
         <div class="rounded-2xl bg-blue-50/60 border border-blue-100 p-5 space-y-2">
-          <span class="inline-flex items-center gap-1 text-[11px] font-extrabold uppercase tracking-wider text-[#2563EB]">
-            <Sparkles class="w-3.5 h-3.5" /> Reto #{{ pasoActual.orden }}
-          </span>
+          <div class="flex items-center justify-between gap-2">
+            <span class="inline-flex items-center gap-1 text-[11px] font-extrabold uppercase tracking-wider text-[#2563EB]">
+              <Sparkles class="w-3.5 h-3.5" /> Reto #{{ pasoActual.orden }}
+            </span>
+            <button
+              v-if="vozPermitida"
+              type="button"
+              class="inline-flex items-center gap-1 rounded-lg bg-white hover:bg-blue-100 border border-blue-200 px-2.5 py-1 text-[11px] font-bold text-[#1D4ED8] transition"
+              @click="leerEnVozAlta(pasoActual.enunciado)"
+            >
+              <VolumeX v-if="hablando" class="w-3.5 h-3.5" />
+              <Volume2 v-else class="w-3.5 h-3.5" />
+              {{ hablando ? 'Detener' : 'Escuchar' }}
+            </button>
+          </div>
           <h2 class="font-display font-extrabold text-xl sm:text-2xl text-slate-900 leading-snug">
             {{ pasoActual.enunciado }}
           </h2>
@@ -271,12 +427,41 @@ const nuevaMision = async () => {
           <div class="w-9 h-9 rounded-xl bg-white flex items-center justify-center text-lg shrink-0 shadow-sm">
             {{ feedbackActual.esCorrecta ? '🎉' : feedbackActual.guiado ? '📘' : '🧑‍🏫' }}
           </div>
-          <div class="space-y-1 text-sm font-medium leading-relaxed">
-            <div class="text-xs font-extrabold uppercase tracking-wide opacity-75">
-              {{ feedbackActual.guiado ? 'Explicación paso a paso' : 'Mi Profe de Mate' }}
+          <div class="space-y-1 text-sm font-medium leading-relaxed flex-1">
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-xs font-extrabold uppercase tracking-wide opacity-75">
+                {{ feedbackActual.guiado ? 'Explicación paso a paso' : 'Mi Profe de Mate' }}
+              </span>
+              <button
+                v-if="vozPermitida"
+                type="button"
+                class="text-[11px] font-bold opacity-75 hover:opacity-100 inline-flex items-center gap-1"
+                @click="leerEnVozAlta(feedbackActual.mensaje)"
+              >
+                <Volume2 class="w-3.5 h-3.5" /> Escuchar
+              </button>
             </div>
             <p>{{ feedbackActual.mensaje }}</p>
           </div>
+        </div>
+
+        <!-- Respuesta a duda conceptual del alumno -->
+        <div
+          v-if="respuestaDuda"
+          class="rounded-2xl bg-violet-50 border border-violet-200 p-3.5 text-sm text-violet-950 space-y-1"
+        >
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] font-extrabold uppercase tracking-wider text-violet-700">💬 Respuesta a tu duda</span>
+            <button
+              v-if="vozPermitida"
+              type="button"
+              class="text-[11px] font-bold text-violet-700 inline-flex items-center gap-1"
+              @click="leerEnVozAlta(respuestaDuda)"
+            >
+              <Volume2 class="w-3.5 h-3.5" /> Escuchar
+            </button>
+          </div>
+          <p class="font-medium leading-relaxed">{{ respuestaDuda }}</p>
         </div>
 
         <!-- Pistas reveladas -->
@@ -307,6 +492,21 @@ const nuevaMision = async () => {
               placeholder="Escribe tu respuesta (ej. 6, 3/4, -12)..."
               class="input-field text-base font-bold flex-1"
             />
+            <button
+              v-if="vozPermitida && soportaDictado"
+              type="button"
+              class="px-3 rounded-xl border-2 transition shrink-0 flex items-center justify-center"
+              :class="
+                escuchando
+                  ? 'bg-rose-500 border-rose-500 text-white animate-pulse'
+                  : 'bg-white border-slate-200 text-slate-600 hover:border-[#2563EB] hover:text-[#2563EB]'
+              "
+              :title="escuchando ? 'Escuchando...' : 'Dictar respuesta por voz'"
+              @click="alternarDictado"
+            >
+              <MicOff v-if="escuchando" class="w-4 h-4" />
+              <Mic v-else class="w-4 h-4" />
+            </button>
             <button type="submit" class="btn-primary shrink-0" :disabled="sending || !respuesta.trim()">
               <Send class="w-4 h-4" />
               {{ sending ? '...' : 'Comprobar' }}
@@ -330,6 +530,15 @@ const nuevaMision = async () => {
               </button>
 
               <button
+                type="button"
+                class="rounded-xl border border-violet-200 bg-violet-50 hover:bg-violet-100 text-violet-700 text-xs font-extrabold py-2 px-3 inline-flex items-center gap-1.5 transition"
+                @click="showDuda = !showDuda"
+              >
+                <MessageCircleQuestion class="w-4 h-4" />
+                Tengo una duda
+              </button>
+
+              <button
                 v-if="puedeVerExplicacion"
                 type="button"
                 class="rounded-xl border border-blue-200 bg-blue-50 hover:bg-blue-100 text-[#1D4ED8] text-xs font-extrabold py-2 px-3 inline-flex items-center gap-1.5 transition"
@@ -348,6 +557,26 @@ const nuevaMision = async () => {
             >
               <Keyboard class="w-4 h-4" />
               {{ showKeyboard ? 'Ocultar teclado mate' : 'Mostrar teclado mate' }}
+            </button>
+          </div>
+
+          <!-- Caja desplegable para preguntarle una duda conceptual al profe -->
+          <div v-if="showDuda" class="rounded-2xl bg-violet-50/70 border border-violet-200 p-3 flex gap-2">
+            <input
+              v-model="dudaTexto"
+              type="text"
+              maxlength="400"
+              placeholder="Ej. ¿Qué significa denominador? o ¿Por qué se invierte el signo?"
+              class="input-field bg-white text-xs flex-1"
+              @keydown.enter.prevent="enviarDuda"
+            />
+            <button
+              type="button"
+              class="rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-xs font-extrabold px-3.5 py-2 shrink-0 disabled:opacity-50"
+              :disabled="dudaLoading || dudaTexto.trim().length < 3"
+              @click="enviarDuda"
+            >
+              {{ dudaLoading ? '...' : 'Preguntar' }}
             </button>
           </div>
 
