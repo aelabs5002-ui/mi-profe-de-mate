@@ -1,5 +1,6 @@
 import { prisma } from './prisma'
 import { BANCO_EJERCICIOS, getCompetenciaForTopic } from './curriculum'
+import { generateAdaptiveExercisesWithGemini } from './ai'
 
 export function todayKey(): string {
   return new Date().toISOString().slice(0, 10)
@@ -70,6 +71,7 @@ export async function crearMisionAdaptativa(params: {
   const alumno = await prisma.alumno.findUnique({
     where: { id: params.alumnoId },
     include: {
+      padre: true,
       erroresFrecuentes: { where: { superado: false }, orderBy: { conteo: 'desc' }, take: 3 },
       competencias: true,
       documentosBiblioteca: { where: { activo: true }, orderBy: { prioridad: 'asc' }, take: 3 }
@@ -150,11 +152,71 @@ export async function crearMisionAdaptativa(params: {
     else if (compActual.nivelDominio < 50) dificultad = 1
   }
 
-  const delTema = BANCO_EJERCICIOS.filter((e) => e.tema === compMeta.tema)
-  const seleccionados = (delTema.length >= 4 ? delTema : BANCO_EJERCICIOS)
-    .slice()
-    .sort((a, b) => Math.abs(a.dificultad - dificultad) - Math.abs(b.dificultad - dificultad))
-    .slice(0, 4)
+  // Evitar repetir ejercicios recientes del alumno
+  const pasosRecientes = await prisma.pasoMision.findMany({
+    where: { mision: { alumnoId: alumno.id } },
+    orderBy: { id: 'desc' },
+    take: 10,
+    select: { enunciado: true }
+  })
+  const ejerciciosEvitar = pasosRecientes.map((p) => p.enunciado)
+
+  const bibliotecaResumen = alumno.documentosBiblioteca
+    .map((d) => `${d.titulo}: ${d.resumenExtraido}`)
+    .join(' | ')
+
+  // Intentar generar ejercicios adaptados a la edad/grado/país con Gemini
+  const generadosIa = await generateAdaptiveExercisesWithGemini({
+    grado: alumno.grado,
+    pais: alumno.padre?.pais || 'Internacional',
+    tema: compMeta.tema,
+    dificultad,
+    cantidad: 4,
+    bibliotecaResumen: bibliotecaResumen || undefined,
+    instruccionesPadre: alumno.instruccionesPadre || undefined,
+    erroresRecientes: alumno.erroresFrecuentes.map((e) => `${e.tema} (${e.errorTag})`),
+    ejerciciosEvitar
+  })
+
+  let pasosData: Array<{
+    orden: number
+    tema: string
+    enunciado: string
+    respuestaEsperada: string
+    pistasJson: string
+    explicacionBase: string
+  }>
+  let fuenteEjercicios = 'banco_local'
+
+  if (generadosIa && generadosIa.length >= 3) {
+    fuenteEjercicios = 'gemini_adaptativo'
+    pasosData = generadosIa.map((ej, idx) => ({
+      orden: idx + 1,
+      tema: ej.tema || compMeta.tema,
+      enunciado: ej.enunciado,
+      respuestaEsperada: ej.respuestaEsperada,
+      pistasJson: JSON.stringify(ej.pistas),
+      explicacionBase: ej.explicacionBase
+    }))
+  } else {
+    const delTema = BANCO_EJERCICIOS.filter((e) => e.tema === compMeta.tema)
+    const pool = delTema.length >= 4 ? delTema : BANCO_EJERCICIOS
+    const noRepetidos = pool.filter((e) => !ejerciciosEvitar.includes(e.enunciado))
+    const candidatos = noRepetidos.length >= 4 ? noRepetidos : pool
+    const seleccionados = candidatos
+      .slice()
+      .sort((a, b) => Math.abs(a.dificultad - dificultad) - Math.abs(b.dificultad - dificultad) + (Math.random() - 0.5) * 0.6)
+      .slice(0, 4)
+
+    pasosData = seleccionados.map((ej, idx) => ({
+      orden: idx + 1,
+      tema: ej.tema,
+      enunciado: ej.enunciado,
+      respuestaEsperada: ej.respuestaEsperada,
+      pistasJson: JSON.stringify(ej.pistas),
+      explicacionBase: ej.explicacionBase
+    }))
+  }
 
   return await prisma.mision.create({
     data: {
@@ -172,17 +234,12 @@ export async function crearMisionAdaptativa(params: {
       estado: 'en_progreso',
       contextoJson: JSON.stringify({
         razonMmcg,
+        fuenteEjercicios,
+        grado: alumno.grado,
         bibliotecaPrioritaria: alumno.documentosBiblioteca.map((d) => d.titulo)
       }),
       pasos: {
-        create: seleccionados.map((ej, idx) => ({
-          orden: idx + 1,
-          tema: ej.tema,
-          enunciado: ej.enunciado,
-          respuestaEsperada: ej.respuestaEsperada,
-          pistasJson: JSON.stringify(ej.pistas),
-          explicacionBase: ej.explicacionBase
-        }))
+        create: pasosData
       }
     },
     include: { pasos: { orderBy: { orden: 'asc' } } }
@@ -224,7 +281,9 @@ export async function actualizarCcaYSecc(params: {
     nuevaRacha = 1
   }
 
-  const minutosSumados = Math.max(1, Math.round(params.duracionSeg / 60))
+  // Tope razonable de 15 min por sesión para que pausar la pestaña no bloquee el límite diario
+  const duracionAcotada = Math.min(900, Math.max(30, params.duracionSeg))
+  const minutosSumados = Math.max(1, Math.round(duracionAcotada / 60))
   const minutosHoy = alumno.fechaUsoHoy === hoy ? alumno.minutosUsadosHoy + minutosSumados : minutosSumados
   const nuevoXp = alumno.xp + xpGanado
 

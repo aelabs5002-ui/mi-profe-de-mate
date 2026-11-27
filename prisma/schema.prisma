@@ -193,3 +193,20 @@ model SesionJuego {
 
   @@index([alumnoId, creadoEn])
 }
+
+model FeedbackPrueba {
+  id           String   @id @default(cuid())
+  padreId      String?
+  alumnoId     String?
+  autorNombre  String   @default("Anónimo")
+  autorTipo    String   @default("padre") // padre | alumno | visitante
+  categoria    String   @default("sugerencia") // sugerencia | error | dificultad | me_gusto
+  calificacion Int?
+  mensaje      String
+  ruta         String   @default("/")
+  dispositivo  String   @default("web")
+  creadoEn     DateTime @default(now())
+
+  @@index([creadoEn])
+  @@index([categoria])
+}

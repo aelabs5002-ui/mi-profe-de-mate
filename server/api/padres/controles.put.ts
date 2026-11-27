@@ -23,13 +23,28 @@ export default defineEventHandler(async (event) => {
 
   const d = parsed.data
   const { padre, alumno } = await requireAlumnoActivo(event, d.alumnoId)
+  const esCuentaDemo = padre.correo === 'familia@miprofedemate.edu'
 
-  if (d.pais || d.pinParental) {
+  // Proteger cuenta demo compartida para que un tester no bloquee a otros testers
+  const pinSeguro = esCuentaDemo ? undefined : d.pinParental
+  const limiteSeguro =
+    d.limiteMinutosDiario !== undefined
+      ? esCuentaDemo
+        ? Math.max(30, d.limiteMinutosDiario)
+        : d.limiteMinutosDiario
+      : undefined
+  const diasSeguros = d.diasPermitidos
+    ? esCuentaDemo
+      ? Array.from(new Set([...d.diasPermitidos, new Date().getDay()]))
+      : d.diasPermitidos
+    : undefined
+
+  if (d.pais || pinSeguro) {
     await prisma.padre.update({
       where: { id: padre.id },
       data: {
         ...(d.pais ? { pais: d.pais } : {}),
-        ...(d.pinParental ? { pinParental: d.pinParental } : {})
+        ...(pinSeguro ? { pinParental: pinSeguro } : {})
       }
     })
   }
@@ -37,8 +52,8 @@ export default defineEventHandler(async (event) => {
   const updatedAlumno = await prisma.alumno.update({
     where: { id: alumno.id },
     data: {
-      ...(d.limiteMinutosDiario !== undefined ? { limiteMinutosDiario: d.limiteMinutosDiario } : {}),
-      ...(d.diasPermitidos ? { diasPermitidosJson: JSON.stringify(d.diasPermitidos) } : {}),
+      ...(limiteSeguro !== undefined ? { limiteMinutosDiario: limiteSeguro } : {}),
+      ...(diasSeguros ? { diasPermitidosJson: JSON.stringify(diasSeguros) } : {}),
       ...(d.maxPistasPorPaso !== undefined ? { maxPistasPorPaso: d.maxPistasPorPaso } : {}),
       ...(d.vozPermitida !== undefined ? { vozPermitida: d.vozPermitida } : {}),
       ...(d.instruccionesPadre !== undefined ? { instruccionesPadre: d.instruccionesPadre } : {}),
@@ -46,5 +61,12 @@ export default defineEventHandler(async (event) => {
     }
   })
 
-  return { ok: true, alumno: updatedAlumno }
+  return {
+    ok: true,
+    alumno: updatedAlumno,
+    notaDemo:
+      esCuentaDemo && d.pinParental
+        ? 'En la cuenta demo compartida el PIN se mantiene en 1234 para que todos puedan probar. Crea tu propia cuenta en /registro para personalizar el PIN.'
+        : undefined
+  }
 })

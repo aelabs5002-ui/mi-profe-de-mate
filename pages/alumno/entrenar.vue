@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Lightbulb, Send, ArrowRight, Trophy, Keyboard, Sparkles, CheckCircle2 } from 'lucide-vue-next'
+import { Lightbulb, Send, ArrowRight, Trophy, Keyboard, Sparkles, CheckCircle2, BookOpen } from 'lucide-vue-next'
 
 definePageMeta({ layout: 'alumno' })
 
@@ -14,13 +14,21 @@ const showKeyboard = ref(true)
 const loading = ref(true)
 const sending = ref(false)
 const hintLoading = ref(false)
+const skipping = ref(false)
 const err = ref('')
 
-const feedbackActual = ref<{ esCorrecta: boolean; mensaje: string } | null>(null)
+const feedbackActual = ref<{ esCorrecta: boolean; guiado?: boolean; mensaje: string } | null>(null)
 const pistasReveladas = ref<string[]>([])
 const resumenFinal = ref<any>(null)
+const resumenPendiente = ref<any>(null)
 
 const pasoActual = computed(() => mision.value?.pasos?.[pasoIndex.value] || null)
+const puedeVerExplicacion = computed(() => {
+  if (!pasoActual.value || feedbackActual.value?.esCorrecta || feedbackActual.value?.guiado) return false
+  const intentos = pasoActual.value.intentosCount || 0
+  const pistas = pasoActual.value.pistasUsadas || 0
+  return intentos >= 3 || (intentos >= 2 && pistas >= maxPistasPorPaso.value)
+})
 
 const cargarMision = async () => {
   loading.value = true
@@ -66,12 +74,19 @@ const comprobarRespuesta = async () => {
   try {
     const res = await $fetch<{
       esCorrecta: boolean
+      intentosCount?: number
       feedback: string
       resumenFinal: any
     }>(`/api/misiones/${mision.value.id}/responder`, {
       method: 'POST',
       body: { pasoId: pasoActual.value.id, respuesta: respuesta.value.trim() }
     })
+
+    if (typeof res.intentosCount === 'number') {
+      pasoActual.value.intentosCount = res.intentosCount
+    } else {
+      pasoActual.value.intentosCount = (pasoActual.value.intentosCount || 0) + 1
+    }
 
     feedbackActual.value = { esCorrecta: res.esCorrecta, mensaje: res.feedback }
     if (res.esCorrecta) {
@@ -85,6 +100,31 @@ const comprobarRespuesta = async () => {
     err.value = e?.data?.statusMessage || 'Error al evaluar tu respuesta.'
   } finally {
     sending.value = false
+  }
+}
+
+const verExplicacionYAvanzar = async () => {
+  if (!pasoActual.value || skipping.value) return
+  err.value = ''
+  skipping.value = true
+  try {
+    const res = await $fetch<{
+      explicacion: string
+      resumenFinal: any
+    }>(`/api/misiones/${mision.value.id}/saltar`, {
+      method: 'POST',
+      body: { pasoId: pasoActual.value.id }
+    })
+    pasoActual.value.estado = 'completado'
+    feedbackActual.value = { esCorrecta: false, guiado: true, mensaje: res.explicacion }
+    if (res.resumenFinal) {
+      resumenPendiente.value = res.resumenFinal
+      await fetchMe(true)
+    }
+  } catch (e: any) {
+    err.value = e?.data?.statusMessage || 'No pudimos cargar la explicación todavía.'
+  } finally {
+    skipping.value = false
   }
 }
 
@@ -107,6 +147,11 @@ const pedirPista = async () => {
 }
 
 const siguientePaso = () => {
+  if (resumenPendiente.value) {
+    resumenFinal.value = resumenPendiente.value
+    resumenPendiente.value = null
+    return
+  }
   if (pasoIndex.value + 1 < (mision.value?.pasos?.length || 0)) {
     pasoIndex.value++
     respuesta.value = ''
@@ -118,6 +163,7 @@ const siguientePaso = () => {
 
 const nuevaMision = async () => {
   resumenFinal.value = null
+  resumenPendiente.value = null
   feedbackActual.value = null
   pistasReveladas.value = []
   respuesta.value = ''
@@ -217,14 +263,18 @@ const nuevaMision = async () => {
           :class="
             feedbackActual.esCorrecta
               ? 'bg-emerald-50 border-emerald-300 text-emerald-900'
-              : 'bg-amber-50 border-amber-300 text-amber-950'
+              : feedbackActual.guiado
+                ? 'bg-blue-50 border-blue-300 text-blue-950'
+                : 'bg-amber-50 border-amber-300 text-amber-950'
           "
         >
           <div class="w-9 h-9 rounded-xl bg-white flex items-center justify-center text-lg shrink-0 shadow-sm">
-            {{ feedbackActual.esCorrecta ? '🎉' : '🧑‍🏫' }}
+            {{ feedbackActual.esCorrecta ? '🎉' : feedbackActual.guiado ? '📘' : '🧑‍🏫' }}
           </div>
           <div class="space-y-1 text-sm font-medium leading-relaxed">
-            <div class="text-xs font-extrabold uppercase tracking-wide opacity-75">Mi Profe de Mate</div>
+            <div class="text-xs font-extrabold uppercase tracking-wide opacity-75">
+              {{ feedbackActual.guiado ? 'Explicación paso a paso' : 'Mi Profe de Mate' }}
+            </div>
             <p>{{ feedbackActual.mensaje }}</p>
           </div>
         </div>
@@ -246,7 +296,7 @@ const nuevaMision = async () => {
         </div>
 
         <!-- Entrada de respuesta -->
-        <form v-if="!feedbackActual?.esCorrecta" class="space-y-3" @submit.prevent="comprobarRespuesta">
+        <form v-if="!feedbackActual?.esCorrecta && !feedbackActual?.guiado" class="space-y-3" @submit.prevent="comprobarRespuesta">
           <div class="flex gap-2">
             <input
               v-model="respuesta"
@@ -264,19 +314,32 @@ const nuevaMision = async () => {
           </div>
 
           <div class="flex items-center justify-between gap-2 flex-wrap">
-            <button
-              type="button"
-              class="btn-outline text-xs py-2 px-3"
-              :disabled="hintLoading || pasoActual.pistasUsadas >= maxPistasPorPaso"
-              @click="pedirPista"
-            >
-              <Lightbulb class="w-4 h-4 text-amber-500" />
-              {{
-                pasoActual.pistasUsadas >= maxPistasPorPaso
-                  ? `Pistas usadas (${pasoActual.pistasUsadas}/${maxPistasPorPaso})`
-                  : `Pedir pista (${pasoActual.pistasUsadas}/${maxPistasPorPaso})`
-              }}
-            </button>
+            <div class="flex items-center gap-2 flex-wrap">
+              <button
+                type="button"
+                class="btn-outline text-xs py-2 px-3"
+                :disabled="hintLoading || pasoActual.pistasUsadas >= maxPistasPorPaso"
+                @click="pedirPista"
+              >
+                <Lightbulb class="w-4 h-4 text-amber-500" />
+                {{
+                  pasoActual.pistasUsadas >= maxPistasPorPaso
+                    ? `Pistas usadas (${pasoActual.pistasUsadas}/${maxPistasPorPaso})`
+                    : `Pedir pista (${pasoActual.pistasUsadas}/${maxPistasPorPaso})`
+                }}
+              </button>
+
+              <button
+                v-if="puedeVerExplicacion"
+                type="button"
+                class="rounded-xl border border-blue-200 bg-blue-50 hover:bg-blue-100 text-[#1D4ED8] text-xs font-extrabold py-2 px-3 inline-flex items-center gap-1.5 transition"
+                :disabled="skipping"
+                @click="verExplicacionYAvanzar"
+              >
+                <BookOpen class="w-4 h-4" />
+                {{ skipping ? 'Cargando...' : 'Ver explicación y continuar' }}
+              </button>
+            </div>
 
             <button
               type="button"
@@ -297,11 +360,16 @@ const nuevaMision = async () => {
           />
         </form>
 
-        <!-- Botón continuar cuando acierta -->
+        <!-- Botón continuar cuando acierta o vio la explicación guiada -->
         <div v-else class="pt-1">
-          <button type="button" class="btn-success w-full py-3.5 text-base" @click="siguientePaso">
+          <button
+            type="button"
+            class="w-full py-3.5 text-base"
+            :class="feedbackActual?.guiado ? 'btn-primary' : 'btn-success'"
+            @click="siguientePaso"
+          >
             <CheckCircle2 class="w-5 h-5" />
-            Continuar al siguiente ejercicio
+            {{ resumenPendiente ? 'Ver resumen de mi misión' : 'Continuar al siguiente ejercicio' }}
             <ArrowRight class="w-4 h-4" />
           </button>
         </div>

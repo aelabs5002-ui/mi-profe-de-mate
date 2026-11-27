@@ -59,8 +59,12 @@ const onFileChange = async (e: Event) => {
   const target = e.target as HTMLInputElement
   const f = target.files?.[0]
   if (!f) return
+  if (!f.type.startsWith('image/') && f.size > 3 * 1024 * 1024) {
+    err.value = 'El PDF es muy pesado (máximo 3 MB). Si pesa más, tómale una foto a la página de ejercicios.'
+    return
+  }
   if (f.size > 8 * 1024 * 1024) {
-    err.value = 'El archivo es muy grande (máximo 8 MB).'
+    err.value = 'El archivo es muy grande (máximo 8 MB para fotos, 3 MB para PDF).'
     return
   }
   selectedFile.value = f

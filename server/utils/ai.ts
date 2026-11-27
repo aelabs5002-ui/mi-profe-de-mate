@@ -213,6 +213,79 @@ export async function generateSocraticFeedback(params: {
   }
 }
 
+export interface GeneratedExercise {
+  enunciado: string
+  respuestaEsperada: string
+  pistas: string[]
+  explicacionBase: string
+  tema: string
+}
+
+export async function generateAdaptiveExercisesWithGemini(params: {
+  grado: string
+  pais: string
+  tema: string
+  dificultad: number
+  cantidad?: number
+  bibliotecaResumen?: string
+  instruccionesPadre?: string
+  erroresRecientes?: string[]
+  ejerciciosEvitar?: string[]
+}): Promise<GeneratedExercise[] | null> {
+  const cantidad = params.cantidad || 4
+  const prompt = `Eres un diseñador pedagógico experto en matemáticas escolares para "${params.grado}" en "${params.pais}".
+Genera exactamente ${cantidad} ejercicios ORIGINALES de "${params.tema}" con nivel de dificultad ${params.dificultad} de 3 (1 = introductorio/fácil, 2 = estándar del grado, 3 = retador pero apropiado para su edad).
+
+REGLAS ESTRICTAS:
+1. Adapta SIEMPRE el vocabulario, los números y el nivel a "${params.grado}". Si es primaria (4to-6to grado), evita álgebra avanzada o negativos complejos salvo que el tema explícito lo pida, y usa contextos cotidianos amigables.
+2. Cada "respuestaEsperada" DEBE ser un único valor corto y exacto (un número entero, decimal corto como "0.75" o fracción simple como "3/4", sin unidades ni texto extra). Verifica matemáticamente tus cálculos antes de responder.
+3. Cada ejercicio debe incluir 2 pistas socráticas que guíen sin revelar la respuesta final.
+4. Incluye "explicacionBase": explicación breve paso a paso (1-2 oraciones claras) de cómo se llega a la respuesta.
+5. No repitas ninguno de estos ejercicios recientes: ${JSON.stringify((params.ejerciciosEvitar || []).slice(0, 8))}
+${params.bibliotecaResumen ? `6. Prioriza el enfoque de la biblioteca del padre: ${params.bibliotecaResumen}` : ''}
+${params.instruccionesPadre ? `7. Toma en cuenta esta indicación del padre: ${params.instruccionesPadre}` : ''}
+${params.erroresRecientes?.length ? `8. Refuerza estos errores recientes del alumno: ${params.erroresRecientes.join(', ')}` : ''}
+
+Devuelve ÚNICAMENTE JSON válido con esta estructura exacta (sin markdown):
+{
+  "ejercicios": [
+    {
+      "enunciado": "Pregunta clara y completa",
+      "respuestaEsperada": "12",
+      "pistas": ["Pista 1 sin dar el resultado", "Pista 2 más concreta sin dar el resultado"],
+      "explicacionBase": "Paso a paso breve que explica cómo llegar a 12."
+    }
+  ]
+}`
+
+  const raw = await callGemini([{ text: prompt }])
+  if (!raw) return null
+
+  try {
+    const cleaned = raw.replace(/^```json\s*/i, '').replace(/```$/, '').trim()
+    const parsed = JSON.parse(cleaned)
+    if (!Array.isArray(parsed?.ejercicios) || parsed.ejercicios.length < 3) return null
+
+    const validos: GeneratedExercise[] = parsed.ejercicios
+      .slice(0, cantidad)
+      .filter((e: any) => e?.enunciado && e?.respuestaEsperada !== undefined && String(e.respuestaEsperada).trim() !== '')
+      .map((e: any) => ({
+        enunciado: String(e.enunciado).trim(),
+        respuestaEsperada: String(e.respuestaEsperada).trim(),
+        pistas:
+          Array.isArray(e.pistas) && e.pistas.length > 0
+            ? e.pistas.slice(0, 3).map((p: any) => String(p).trim()).filter(Boolean)
+            : ['Lee el enunciado despacio y divide el problema en pasos cortos.'],
+        explicacionBase: String(e.explicacionBase || `La respuesta correcta es ${String(e.respuestaEsperada).trim()}.`).trim(),
+        tema: params.tema
+      }))
+
+    return validos.length >= 3 ? validos : null
+  } catch {
+    return null
+  }
+}
+
 export async function analyzeHomeworkWithGemini(params: {
   fileName: string
   mimeType: string

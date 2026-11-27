@@ -384,10 +384,30 @@ export const BANCO_EJERCICIOS: EjercicioSeed[] = [
     codigoCompetencia: 'MAT-POR-01',
     motorId: 'C',
     dificultad: 3,
-    enunciado: 'Si 3 lápices cuestan 15 Bs., ¿cuánto cuestan 7 lápices al mismo precio?',
+    enunciado: 'Si 3 lápices cuestan 15 monedas, ¿cuánto cuestan 7 lápices al mismo precio?',
     respuestaEsperada: '35',
     pistas: ['Encuentra primero el precio de 1 solo lápiz dividiendo 15 ÷ 3.', 'Multiplica el precio unitario (5) por 7.'],
-    explicacionBase: '1 lápiz = 5 Bs., 7 × 5 = 35 Bs.'
+    explicacionBase: '1 lápiz = 5 monedas; 7 × 5 = 35 monedas.'
+  },
+  {
+    tema: 'Porcentajes y Proporciones',
+    codigoCompetencia: 'MAT-POR-01',
+    motorId: 'C',
+    dificultad: 1,
+    enunciado: '¿Cuánto es el 50% de 64?',
+    respuestaEsperada: '32',
+    pistas: ['El 50% siempre equivale a la mitad de un número.', 'Divide 64 entre 2.'],
+    explicacionBase: 'El 50% de 64 es su mitad: 64 ÷ 2 = 32.'
+  },
+  {
+    tema: 'Porcentajes y Proporciones',
+    codigoCompetencia: 'MAT-POR-01',
+    motorId: 'C',
+    dificultad: 2,
+    enunciado: 'En un salón de 40 estudiantes, el 20% juega fútbol. ¿Cuántos estudiantes juegan fútbol?',
+    respuestaEsperada: '8',
+    pistas: ['Calcula primero el 10% de 40 (dividiendo entre 10).', 'Multiplica ese resultado (4) por 2 para obtener el 20%.'],
+    explicacionBase: '10% de 40 es 4, por lo tanto el 20% es 8 estudiantes.'
   },
 
   // Perímetros y Áreas
@@ -420,6 +440,26 @@ export const BANCO_EJERCICIOS: EjercicioSeed[] = [
     respuestaEsperada: '9',
     pistas: ['Un cuadrado tiene 4 lados iguales.', 'Divide el perímetro total (36) entre 4.'],
     explicacionBase: '36 ÷ 4 = 9 cm.'
+  },
+  {
+    tema: 'Perímetros y Áreas',
+    codigoCompetencia: 'MAT-GEO-01',
+    motorId: 'F',
+    dificultad: 1,
+    enunciado: 'Un rectángulo mide 7 cm de largo y 3 cm de ancho. ¿Cuál es su perímetro (en cm)?',
+    respuestaEsperada: '20',
+    pistas: ['El perímetro es la suma de los 4 lados del rectángulo.', 'Suma 7 + 3 + 7 + 3 (o calcula 2 × (7 + 3)).'],
+    explicacionBase: 'Perímetro = 2 × (7 + 3) = 20 cm.'
+  },
+  {
+    tema: 'Perímetros y Áreas',
+    codigoCompetencia: 'MAT-GEO-01',
+    motorId: 'F',
+    dificultad: 2,
+    enunciado: 'Un cuadrado tiene lados de 6 cm. ¿Cuál es su área (en cm²)?',
+    respuestaEsperada: '36',
+    pistas: ['El área de un cuadrado se calcula multiplicando lado × lado.', 'Multiplica 6 × 6.'],
+    explicacionBase: 'Área = 6 × 6 = 36 cm².'
   }
 ]
 
@@ -434,11 +474,14 @@ export function evaluateMathAnswer(studentRaw: string, expectedRaw: string): boo
     s
       .trim()
       .toLowerCase()
+      .replace(/[−–—]/g, '-')
       .replace(/,/g, '.')
+      .replace(/×/g, '*')
+      .replace(/÷/g, '/')
       .replace(/\s+/g, '')
       .replace(/^[a-z]=/, '') // "x=6" -> "6"
       .replace(/^\+/, '')
-      .replace(/(cm2|cm²|bs\.?|\$|%)$/i, '')
+      .replace(/(cm2|cm²|m2|m²|cm|mm|m|bs\.?|usd|\$|%)$/i, '')
 
   const a = clean(studentRaw)
   const b = clean(expectedRaw)

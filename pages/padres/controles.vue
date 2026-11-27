@@ -51,7 +51,7 @@ const guardar = async () => {
   saving.value = true
   try {
     const paisFinal = esOpcionLibre.value && form.paisLibre.trim() ? form.paisLibre.trim() : form.pais
-    await $fetch('/api/padres/controles', {
+    const res = await $fetch<{ notaDemo?: string }>('/api/padres/controles', {
       method: 'PUT',
       body: {
         alumnoId: data.value?.alumno?.id,
@@ -66,7 +66,7 @@ const guardar = async () => {
     form.pinParental = ''
     await fetchMe(true)
     await refresh()
-    okMsg.value = 'Controles parentales y configuración familiar guardados correctamente.'
+    okMsg.value = res?.notaDemo || 'Controles parentales y configuración familiar guardados correctamente.'
   } finally {
     saving.value = false
   }

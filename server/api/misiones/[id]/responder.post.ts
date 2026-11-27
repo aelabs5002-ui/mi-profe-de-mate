@@ -111,21 +111,31 @@ export default defineEventHandler(async (event) => {
   let resumenFinal: any = null
   if (esCorrecta) {
     const pasosActualizados = await prisma.pasoMision.findMany({
-      where: { misionId: mision.id }
+      where: { misionId: mision.id },
+      include: { intentos: { select: { esCorrecta: true } } }
     })
     const pendientes = pasosActualizados.filter((p) => p.estado !== 'completado')
     if (pendientes.length === 0) {
       const totalPasos = pasosActualizados.length
-      const aciertosPrimerIntento = pasosActualizados.filter((p) => p.intentosCount === 1).length
-      const totalPistas = pasosActualizados.reduce((acc, p) => acc + p.pistasUsadas, 0)
-      const duracionSeg = Math.max(60, Math.round((Date.now() - mision.creadoEn.getTime()) / 1000))
+      const resueltosCorrectamente = pasosActualizados.filter((p) => p.intentos.some((i) => i.esCorrecta)).length
+      const aciertosPrimerIntento = pasosActualizados.filter(
+        (p) => p.intentosCount === 1 && p.intentos.some((i) => i.esCorrecta)
+      ).length
+      const pasosConAyudaGuiada = totalPasos - resueltosCorrectamente
+      const totalPistas = pasosActualizados.reduce((acc, p) => acc + p.pistasUsadas, 0) + pasosConAyudaGuiada
+      const duracionSeg = Math.min(900, Math.max(60, Math.round((Date.now() - mision.creadoEn.getTime()) / 1000)))
+
+      const aciertosEfectivos =
+        resueltosCorrectamente === totalPasos
+          ? Math.max(aciertosPrimerIntento, Math.round(totalPasos * 0.75))
+          : resueltosCorrectamente
 
       const ccaResult = await actualizarCcaYSecc({
         alumnoId: alumno.id,
         tema: mision.tema,
         motorId: mision.motorId,
         dificultad: mision.dificultad,
-        aciertos: Math.max(aciertosPrimerIntento, Math.round(totalPasos * 0.7)),
+        aciertos: aciertosEfectivos,
         total: totalPasos,
         pistasUsadas: totalPistas,
         duracionSeg
@@ -156,6 +166,7 @@ export default defineEventHandler(async (event) => {
 
   return {
     esCorrecta,
+    intentosCount: intentoNumero,
     feedback: ai.mensaje,
     evento: ai.evento,
     usedGemini: ai.usedGemini,
