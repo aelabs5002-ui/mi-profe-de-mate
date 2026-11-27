@@ -111,6 +111,38 @@ const volver = () => {
 
       <!-- TAB PADRES -->
       <section v-if="tab === 'padres'" class="space-y-4">
+        <div class="card-surface border-blue-200 bg-blue-50/50 space-y-3">
+          <div class="text-xs font-extrabold uppercase tracking-wider text-[#2563EB]">
+            ✨ Qué puedes hacer y lograr como padre o representante
+          </div>
+          <ul class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-sm text-slate-700">
+            <li class="rounded-xl bg-white border border-blue-100 p-3 flex items-start gap-2">
+              <CheckCircle2 class="w-4 h-4 text-[#2563EB] shrink-0 mt-0.5" />
+              <span><strong>Acompañar sin estrés ni discusiones:</strong> el Tutor IA guía a tu hijo/a paso a paso sin regalarle la respuesta, ideal incluso si no recuerdas el tema.</span>
+            </li>
+            <li class="rounded-xl bg-white border border-blue-100 p-3 flex items-start gap-2">
+              <CheckCircle2 class="w-4 h-4 text-[#2563EB] shrink-0 mt-0.5" />
+              <span><strong>Adaptar la app al colegio real:</strong> sube una foto o PDF del temario escolar y la IA genera prácticas alineadas a su grado y país.</span>
+            </li>
+            <li class="rounded-xl bg-white border border-blue-100 p-3 flex items-start gap-2">
+              <CheckCircle2 class="w-4 h-4 text-[#2563EB] shrink-0 mt-0.5" />
+              <span><strong>Saber exactamente en qué falla:</strong> la Carta Cognitiva (CCA) muestra el dominio por tema, los tropiezos frecuentes y qué reforzar en casa.</span>
+            </li>
+            <li class="rounded-xl bg-white border border-blue-100 p-3 flex items-start gap-2">
+              <CheckCircle2 class="w-4 h-4 text-[#2563EB] shrink-0 mt-0.5" />
+              <span><strong>Controlar hábitos saludables:</strong> fija minutos diarios, días de estudio, límite de pistas, voz del tutor y protege todo con tu PIN de 4 dígitos.</span>
+            </li>
+            <li class="rounded-xl bg-white border border-blue-100 p-3 flex items-start gap-2">
+              <CheckCircle2 class="w-4 h-4 text-[#2563EB] shrink-0 mt-0.5" />
+              <span><strong>Respaldo en PDF:</strong> descarga reportes semanales claros y los Certificados SECC que tu hijo/a vaya logrando.</span>
+            </li>
+            <li class="rounded-xl bg-white border border-blue-100 p-3 flex items-start gap-2">
+              <CheckCircle2 class="w-4 h-4 text-[#2563EB] shrink-0 mt-0.5" />
+              <span><strong>Conectar al profesor con privacidad:</strong> autoriza al docente o tutor particular solo para el hijo que elijas y desvincula en 1 clic cuando quieras.</span>
+            </li>
+          </ul>
+        </div>
+
         <div class="card-surface space-y-2">
           <div class="text-xs font-extrabold text-[#2563EB] uppercase">Paso 1 · Crear cuenta familiar</div>
           <h2 class="text-base font-extrabold text-slate-900">Regístrate en menos de 1 minuto</h2>
@@ -147,6 +179,38 @@ const volver = () => {
 
       <!-- TAB ESTUDIANTES -->
       <section v-else-if="tab === 'alumno'" class="space-y-4">
+        <div class="card-surface border-emerald-200 bg-emerald-50/50 space-y-3">
+          <div class="text-xs font-extrabold uppercase tracking-wider text-emerald-700">
+            ✨ Qué puedes hacer y lograr como estudiante
+          </div>
+          <ul class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-sm text-slate-700">
+            <li class="rounded-xl bg-white border border-emerald-100 p-3 flex items-start gap-2">
+              <CheckCircle2 class="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+              <span><strong>Entender matemáticas de verdad:</strong> aprendes paso a paso sin regaños, ganando seguridad antes de tus evaluaciones y exámenes.</span>
+            </li>
+            <li class="rounded-xl bg-white border border-emerald-100 p-3 flex items-start gap-2">
+              <CheckCircle2 class="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+              <span><strong>Resolver tus tareas del cuaderno:</strong> toma una foto a tus ejercicios reales y el profe IA te guía hasta que logres resolverlos tú mismo.</span>
+            </li>
+            <li class="rounded-xl bg-white border border-emerald-100 p-3 flex items-start gap-2">
+              <CheckCircle2 class="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+              <span><strong>Nunca quedarte atascado:</strong> escucha los retos en voz alta (🔊), dicta respuestas (🎙️), pregunta tus dudas (💬) y pide pistas cuando lo necesites.</span>
+            </li>
+            <li class="rounded-xl bg-white border border-emerald-100 p-3 flex items-start gap-2">
+              <CheckCircle2 class="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+              <span><strong>Practicar jugando:</strong> diviértete con 5 juegos matemáticos de cálculo mental, fracciones, álgebra, lógica y secuencias mientras subes de nivel y racha.</span>
+            </li>
+            <li class="rounded-xl bg-white border border-emerald-100 p-3 flex items-start gap-2">
+              <CheckCircle2 class="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+              <span><strong>Recibir misiones de tu profesor:</strong> practica exactamente lo que tu profe asignó para clase o tutoría desde un solo lugar.</span>
+            </li>
+            <li class="rounded-xl bg-white border border-emerald-100 p-3 flex items-start gap-2">
+              <CheckCircle2 class="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+              <span><strong>Ganar Certificados Oficiales SECC:</strong> demuestra que dominas cada tema (90%+ sin pistas) y descarga tu diploma en PDF.</span>
+            </li>
+          </ul>
+        </div>
+
         <div class="card-surface space-y-2">
           <div class="text-xs font-extrabold text-emerald-600 uppercase">🎯 Misiones y Tareas</div>
           <h2 class="text-base font-extrabold text-slate-900">Misión del Día, de tu Currículo o de tu Profesor</h2>
@@ -185,6 +249,38 @@ const volver = () => {
 
       <!-- TAB PROFESORES -->
       <section v-else-if="tab === 'profesor'" class="space-y-4">
+        <div class="card-surface border-indigo-200 bg-indigo-50/50 space-y-3">
+          <div class="text-xs font-extrabold uppercase tracking-wider text-indigo-700">
+            ✨ Qué puedes hacer y lograr como profesor de matemáticas
+          </div>
+          <ul class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-sm text-slate-700">
+            <li class="rounded-xl bg-white border border-indigo-100 p-3 flex items-start gap-2">
+              <CheckCircle2 class="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
+              <span><strong>Tener un asistente IA 24/7 para tus alumnos:</strong> refuerzan en casa con guía socrática que nunca les hace la tarea ni les regala respuestas.</span>
+            </li>
+            <li class="rounded-xl bg-white border border-indigo-100 p-3 flex items-start gap-2">
+              <CheckCircle2 class="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
+              <span><strong>Diagnosticar en segundos dónde se traba tu grupo:</strong> detecta patrones de error repetidos (signos, despeje, fracciones, operaciones) para enfocar mejor tus clases.</span>
+            </li>
+            <li class="rounded-xl bg-white border border-indigo-100 p-3 flex items-start gap-2">
+              <CheckCircle2 class="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
+              <span><strong>Asignar prácticas y guías en 1 minuto:</strong> envía misiones por tema o subiendo la foto/PDF de tus propios ejercicios y recibe precisión, intentos y pistas usadas.</span>
+            </li>
+            <li class="rounded-xl bg-white border border-indigo-100 p-3 flex items-start gap-2">
+              <CheckCircle2 class="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
+              <span><strong>Mantener tu metodología en casa:</strong> escribe indicaciones pedagógicas para que el Tutor IA explique exactamente con el método que enseñas en el salón.</span>
+            </li>
+            <li class="rounded-xl bg-white border border-indigo-100 p-3 flex items-start gap-2">
+              <CheckCircle2 class="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
+              <span><strong>Potenciar tus clases adicionales y tutorías:</strong> envía tu enlace único por WhatsApp para vincular automáticamente a nuevos alumnos y familias contigo.</span>
+            </li>
+            <li class="rounded-xl bg-white border border-indigo-100 p-3 flex items-start gap-2">
+              <CheckCircle2 class="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
+              <span><strong>Mostrar resultados profesionales a los padres:</strong> descarga el Reporte PDF de cada estudiante con su Carta Cognitiva y evolución comprobada.</span>
+            </li>
+          </ul>
+        </div>
+
         <div class="card-surface space-y-2">
           <div class="text-xs font-extrabold text-indigo-600 uppercase">Paso 1 · Entrar al Portal Docente</div>
           <h2 class="text-base font-extrabold text-slate-900">Cuenta gratuita o Demo Docente</h2>

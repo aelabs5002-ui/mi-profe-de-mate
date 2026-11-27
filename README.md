@@ -1,6 +1,10 @@
 # Mi Profe de Mate — Tutor Matemático IA
 
-Plataforma web educativa full-stack (**Nuxt 3 + Tailwind CSS + Prisma + Gemini Multimodal**) para estudiantes de 9 a 15 años y sus padres.
+Plataforma web educativa full-stack (**Nuxt 3 + Tailwind CSS + Prisma + Gemini Multimodal**) para estudiantes de 9 a 15 años, padres y profesores de matemáticas.
+
+- **Producción (Vercel):** https://mi-profe-de-mate.vercel.app
+- **Portal Docente:** https://mi-profe-de-mate.vercel.app/profesor/login
+- **Guía de Uso / Ayuda:** https://mi-profe-de-mate.vercel.app/ayuda
 
 ## Arranque rápido en local
 
